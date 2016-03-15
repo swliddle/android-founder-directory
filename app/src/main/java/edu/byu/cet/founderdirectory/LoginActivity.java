@@ -39,7 +39,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
-import edu.byu.cet.founderdirectory.utilities.FounderSyncHelper;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -88,12 +87,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 return false;
             }
         });
-
-        FounderSyncHelper helper = FounderSyncHelper.getInstance();
-
-        for (int i = 0; i < 1000; i++) {
-            helper.syncFounders();
-        }
 
         Button mEmailSignInButton = (Button) findViewById(R.id.email_sign_in_button);
         mEmailSignInButton.setOnClickListener(new OnClickListener() {

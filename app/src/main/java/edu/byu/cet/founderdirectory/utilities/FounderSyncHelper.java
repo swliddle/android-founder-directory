@@ -12,6 +12,7 @@ public class FounderSyncHelper {
     private static final String TAG = "FounderSyncHelper";
 
     private static FounderSyncHelper sSyncHelper;
+
     private static int counter = 0;
 
     private FounderSyncHelper() {
@@ -30,9 +31,9 @@ public class FounderSyncHelper {
         Thread worker = new Thread(new Runnable() {
             @Override
             public void run() {
-//                synchronized (sSyncHelper) {
+                synchronized (sSyncHelper) {
                     Log.d(TAG, "run: instance " + counter++ + " hits the wall");
-//                }
+                }
             }
         });
 
