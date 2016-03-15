@@ -110,9 +110,10 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
                 values.put(FounderProvider.Contract.GIVEN_NAMES, "Chewbacca C.");
                 values.put(FounderProvider.Contract.SURNAMES, "Wookie");
+                values.put(FounderProvider.Contract.PREFERRED_FIRST_NAME, "Chewy");
                 values.put(FounderProvider.Contract.EMAIL, "chewy@gmail.com");
                 values.put(FounderProvider.Contract.CELL, "801-422-1234");
-                values.put(FounderProvider.Contract.COMPANY_NAME, "Chewy Wookie Cookies");
+                values.put(FounderProvider.Contract.ORGANIZATION_NAME, "Chewy Wookie Cookies");
 
                 getContentResolver().insert(FounderProvider.Contract.CONTENT_URI, values);
             }

@@ -162,16 +162,20 @@ public class FounderProvider extends ContentProvider {
         private static final String DATABASE_NAME = "founders.db";
 
         /**
+         * Database version.
+         */
+        private static final int DATABASE_VERSION = 2;
+
+        /**
          * Normal constructor.
          *
          * @param context
          */
         public FounderDatabaseHelper(Context context) {
-            super(context, DATABASE_NAME, null, 1);
+            super(context, DATABASE_NAME, null, DATABASE_VERSION);
         }
 
-        @Override
-        public void onCreate(SQLiteDatabase db) {
+        private void initDatabase(SQLiteDatabase db) {
             String create = "CREATE TABLE ";
             String idField = BaseColumns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, ";
 
@@ -179,10 +183,18 @@ public class FounderProvider extends ContentProvider {
             db.execSQL(create + Contract.FOUNDER + " (" + idField + //
                     Contract.GIVEN_NAMES + " TEXT, " + //
                     Contract.SURNAMES + " TEXT, " + //
-                    Contract.PREFERRED_NAME + " TEXT, " + //
+                    Contract.PREFERRED_FIRST_NAME + " TEXT, " + //
+                    Contract.PREFERRED_FULL_NAME + " TEXT, " + //
                     Contract.CELL + " TEXT, " + //
                     Contract.EMAIL + " TEXT, " + //
-                    Contract.SPOUSE_NAME + " TEXT, " + //
+                    Contract.WEB_SITE + " TEXT, " + //
+                    Contract.LINKED_IN + " TEXT, " + //
+                    Contract.BIOGRAPHY + " TEXT, " + //
+                    Contract.EXPERTISE + " TEXT, " + //
+                    Contract.SPOUSE_GIVEN_NAMES + " TEXT, " + //
+                    Contract.SPOUSE_SURNAMES + " TEXT, " + //
+                    Contract.SPOUSE_PREFERRED_FIRST_NAME + " TEXT, " + //
+                    Contract.SPOUSE_PREFERRED_FULL_NAME + " TEXT, " + //
                     Contract.SPOUSE_CELL + " TEXT, " + //
                     Contract.SPOUSE_EMAIL + " TEXT, " + //
                     Contract.STATUS + " TEXT, " + //
@@ -191,27 +203,39 @@ public class FounderProvider extends ContentProvider {
                     Contract.HOME_ADDRESS2 + " TEXT, " + //
                     Contract.HOME_CITY + " TEXT, " + //
                     Contract.HOME_STATE + " TEXT, " + //
-                    Contract.HOME_ZIP + " TEXT, " + //
-                    Contract.COMPANY_NAME + " TEXT, " + //
+                    Contract.HOME_POSTAL_CODE + " TEXT, " + //
+                    Contract.HOME_COUNTRY + " TEXT, " + //
+                    Contract.ORGANIZATION_NAME + " TEXT, " + //
+                    Contract.JOB_TITLE + " TEXT, " + //
                     Contract.WORK_ADDRESS1 + " TEXT, " + //
                     Contract.WORK_ADDRESS2 + " TEXT, " + //
                     Contract.WORK_CITY + " TEXT, " + //
                     Contract.WORK_STATE + " TEXT, " + //
-                    Contract.WORK_ZIP + " TEXT, " + //
-                    Contract.PROFILE + " TEXT " + //
-                    Contract.NETWORKING_INTERESTS + " TEXT " + //
-                    Contract.FAMILY_PROFILE + " TEXT " + //
-                    Contract.HOBBIES + " TEXT " + //
-                    Contract.IMAGE_URL + " TEXT " + //
+                    Contract.WORK_POSTAL_CODE + " TEXT, " + //
+                    Contract.WORK_COUNTRY + " TEXT, " + //
+                    Contract.MAILING_ADDRESS1 + " TEXT, " + //
+                    Contract.MAILING_ADDRESS2 + " TEXT, " + //
+                    Contract.MAILING_CITY + " TEXT, " + //
+                    Contract.MAILING_STATE + " TEXT, " + //
+                    Contract.MAILING_POSTAL_CODE + " TEXT, " + //
+                    Contract.MAILING_COUNTRY + " TEXT, " + //
+                    Contract.MAILING_SAME_AS + " TEXT, " + //
+                    Contract.IMAGE_URL + " TEXT, " + //
+                    Contract.SPOUSE_IMAGE_URL + " TEXT " + //
                     ");");
         }
 
         @Override
+        public void onCreate(SQLiteDatabase db) {
+            initDatabase(db);
+        }
+
+        @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            // Currently there is nothing to do.  But as our application evolves,
-            // we may need to write modification statements to transform an existing
-            // schema into a later version.  Note that you might also want to
-            // implement onDowngrade, but only for special cases.
+            if (oldVersion < 2) {
+                db.execSQL("DROP TABLE " + Contract.FOUNDER);
+                initDatabase(db);
+            }
         }
     }
 
@@ -227,10 +251,18 @@ public class FounderProvider extends ContentProvider {
         // Also BaseColumns._ID here
         public static final String GIVEN_NAMES = "given_names";
         public static final String SURNAMES = "surnames";
-        public static final String PREFERRED_NAME = "preferred_name";
+        public static final String PREFERRED_FIRST_NAME = "preferred_first_name";
+        public static final String PREFERRED_FULL_NAME = "preferred_full_name";
         public static final String CELL = "cell";
         public static final String EMAIL = "email";
-        public static final String SPOUSE_NAME = "spouse_name";
+        public static final String WEB_SITE = "website";
+        public static final String LINKED_IN = "linkedin";
+        public static final String BIOGRAPHY = "biography";
+        public static final String EXPERTISE = "expertise";
+        public static final String SPOUSE_GIVEN_NAMES = "spouse_given_names";
+        public static final String SPOUSE_SURNAMES = "spouse_surnames";
+        public static final String SPOUSE_PREFERRED_FIRST_NAME = "spouse_pref_first_name";
+        public static final String SPOUSE_PREFERRED_FULL_NAME = "spouse_pref_full_name";
         public static final String SPOUSE_CELL = "spouse_cell";
         public static final String SPOUSE_EMAIL = "spouse_email";
         public static final String STATUS = "status";
@@ -239,18 +271,25 @@ public class FounderProvider extends ContentProvider {
         public static final String HOME_ADDRESS2 = "home_address2";
         public static final String HOME_CITY = "home_city";
         public static final String HOME_STATE = "home_state";
-        public static final String HOME_ZIP = "home_zip";
-        public static final String COMPANY_NAME = "company_name";
+        public static final String HOME_POSTAL_CODE = "home_postal_code";
+        public static final String HOME_COUNTRY = "home_country";
+        public static final String ORGANIZATION_NAME = "organization";
+        public static final String JOB_TITLE = "job_title";
         public static final String WORK_ADDRESS1 = "work_address1";
         public static final String WORK_ADDRESS2 = "work_address2";
         public static final String WORK_CITY = "work_city";
         public static final String WORK_STATE = "work_state";
-        public static final String WORK_ZIP = "work_zip";
-        public static final String PROFILE = "profile";
-        public static final String NETWORKING_INTERESTS = "net_interests";
-        public static final String FAMILY_PROFILE = "family_profile";
-        public static final String HOBBIES = "hobbies";
+        public static final String WORK_POSTAL_CODE = "work_postal_code";
+        public static final String WORK_COUNTRY = "work_country";
+        public static final String MAILING_ADDRESS1 = "mailing_address1";
+        public static final String MAILING_ADDRESS2 = "mailing_address2";
+        public static final String MAILING_CITY = "mailing_city";
+        public static final String MAILING_STATE = "mailing_state";
+        public static final String MAILING_POSTAL_CODE = "mailing_postal_code";
+        public static final String MAILING_COUNTRY = "mailing_country";
+        public static final String MAILING_SAME_AS = "mailing_same_as";
         public static final String IMAGE_URL = "image_url";
+        public static final String SPOUSE_IMAGE_URL = "spouse_image_url";
 
         /**
          * The authority name for this ContentProvider.
