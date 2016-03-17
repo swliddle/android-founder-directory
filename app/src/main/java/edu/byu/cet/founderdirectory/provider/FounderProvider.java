@@ -164,7 +164,7 @@ public class FounderProvider extends ContentProvider {
         /**
          * Database version.
          */
-        private static final int DATABASE_VERSION = 3;
+        private static final int DATABASE_VERSION = 5;
 
         /**
          * Normal constructor.
@@ -261,8 +261,8 @@ public class FounderProvider extends ContentProvider {
         public static final String PREFERRED_FULL_NAME = "preferred_full_name";
         public static final String CELL = "cell";
         public static final String EMAIL = "email";
-        public static final String WEB_SITE = "website";
-        public static final String LINKED_IN = "linkedin";
+        public static final String WEB_SITE = "web_site";
+        public static final String LINKED_IN = "linked_in";
         public static final String BIOGRAPHY = "biography";
         public static final String EXPERTISE = "expertise";
         public static final String SPOUSE_GIVEN_NAMES = "spouse_given_names";
@@ -279,7 +279,7 @@ public class FounderProvider extends ContentProvider {
         public static final String HOME_STATE = "home_state";
         public static final String HOME_POSTAL_CODE = "home_postal_code";
         public static final String HOME_COUNTRY = "home_country";
-        public static final String ORGANIZATION_NAME = "organization";
+        public static final String ORGANIZATION_NAME = "organization_name";
         public static final String JOB_TITLE = "job_title";
         public static final String WORK_ADDRESS1 = "work_address1";
         public static final String WORK_ADDRESS2 = "work_address2";

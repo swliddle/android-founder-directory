@@ -1,18 +1,24 @@
 package edu.byu.cet.founderdirectory.service;
 
+import android.annotation.TargetApi;
 import android.app.IntentService;
+import android.app.Notification;
+import android.app.NotificationManager;
 import android.content.ContentValues;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.os.Build;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.net.URLEncoder;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.byu.cet.founderdirectory.R;
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.utilities.HttpHelper;
 
@@ -33,7 +39,7 @@ public class SyncService extends IntentService {
      * service when the user launches the app, we'll proactively shut
      * ourselves down after this number of milliseconds.
      */
-    private static final int MAX_LIVE_TIME = 12 * 60 * 60 * 1000;
+    private static final int MAX_LIVE_TIME = 2 * 60 * 60 * 1000;
 
     /**
      * Interval, in milliseconds, between sync polling requests.
@@ -92,6 +98,7 @@ public class SyncService extends IntentService {
             // Double-check that the interval has elapsed, in case of interrupted sleep.
             if (mLastSyncTime + POLL_INTERVAL < System.currentTimeMillis()) {
                 synchronizeFounders();
+                notifyUserOfSyncAttempt();
             }
 
             try {
@@ -100,6 +107,20 @@ public class SyncService extends IntentService {
                 // Ignore
             }
         }
+    }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
+    private void notifyUserOfSyncAttempt() {
+        NotificationManager manager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+
+        Notification.Builder builder = new Notification.Builder(this)
+                .setContentTitle("Founder Directory Sync")
+                .setContentText("We've just synced with the server again.")
+                .setSmallIcon(R.drawable.rollins_logo_e_40);
+
+        manager.notify(0, builder.build());
+
     }
 
     /**
@@ -334,7 +355,7 @@ public class SyncService extends IntentService {
             for (int i = 0; i < len; i++) {
                 JSONObject founder = (JSONObject) founders.get(i);
 
-                if (!founder.getString(FounderProvider.Contract.DELETED).equalsIgnoreCase("0")) {
+                if (founder.getString(FounderProvider.Contract.DELETED).equalsIgnoreCase("1")) {
                     // We need to delete this founder
                     getContentResolver().delete(FounderProvider.Contract.CONTENT_URI,
                             FounderProvider.Contract._ID + " = ?",

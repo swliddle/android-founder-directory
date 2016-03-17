@@ -57,7 +57,7 @@ public class HttpHelper {
 
             br.close();
 
-            String result = sb.toString();
+            return sb.toString();
         } catch (MalformedURLException e) {
             // Ignore
             Log.d(TAG, "getContent: " + e);
