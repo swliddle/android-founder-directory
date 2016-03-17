@@ -164,7 +164,7 @@ public class FounderProvider extends ContentProvider {
         /**
          * Database version.
          */
-        private static final int DATABASE_VERSION = 2;
+        private static final int DATABASE_VERSION = 3;
 
         /**
          * Normal constructor.
@@ -221,7 +221,11 @@ public class FounderProvider extends ContentProvider {
                     Contract.MAILING_COUNTRY + " TEXT, " + //
                     Contract.MAILING_SAME_AS + " TEXT, " + //
                     Contract.IMAGE_URL + " TEXT, " + //
-                    Contract.SPOUSE_IMAGE_URL + " TEXT " + //
+                    Contract.SPOUSE_IMAGE_URL + " TEXT, " + //
+                    Contract.VERSION + " INTEGER, " + //
+                    Contract.DELETED + " INTEGER, " + //
+                    Contract.DIRTY + " INTEGER, " + //
+                    Contract.NEW + " INTEGER " + //
                     ");");
         }
 
@@ -232,7 +236,9 @@ public class FounderProvider extends ContentProvider {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if (oldVersion < 2) {
+            if (oldVersion < DATABASE_VERSION) {
+                // NEEDSWORK: this is a very naive upgrade technique
+
                 db.execSQL("DROP TABLE " + Contract.FOUNDER);
                 initDatabase(db);
             }
@@ -261,8 +267,8 @@ public class FounderProvider extends ContentProvider {
         public static final String EXPERTISE = "expertise";
         public static final String SPOUSE_GIVEN_NAMES = "spouse_given_names";
         public static final String SPOUSE_SURNAMES = "spouse_surnames";
-        public static final String SPOUSE_PREFERRED_FIRST_NAME = "spouse_pref_first_name";
-        public static final String SPOUSE_PREFERRED_FULL_NAME = "spouse_pref_full_name";
+        public static final String SPOUSE_PREFERRED_FIRST_NAME = "spouse_preferred_first_name";
+        public static final String SPOUSE_PREFERRED_FULL_NAME = "spouse_preferred_full_name";
         public static final String SPOUSE_CELL = "spouse_cell";
         public static final String SPOUSE_EMAIL = "spouse_email";
         public static final String STATUS = "status";
@@ -290,6 +296,10 @@ public class FounderProvider extends ContentProvider {
         public static final String MAILING_SAME_AS = "mailing_same_as";
         public static final String IMAGE_URL = "image_url";
         public static final String SPOUSE_IMAGE_URL = "spouse_image_url";
+        public static final String VERSION = "version";
+        public static final String DELETED = "deleted";
+        public static final String DIRTY = "dirty";
+        public static final String NEW = "new";
 
         /**
          * The authority name for this ContentProvider.

@@ -47,6 +47,11 @@
             android:exported="false"
             />
 
+        <service
+            android:name=".service.SyncService"
+            android:exported="false"
+            />
+
     </application>
 
 </manifest>

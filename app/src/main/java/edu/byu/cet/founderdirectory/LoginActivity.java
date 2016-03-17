@@ -30,6 +30,9 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,6 +42,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
+import edu.byu.cet.founderdirectory.service.SyncService;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -354,6 +358,17 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
                 Log.d(TAG, "You received: " + result);
                 urlConnection.disconnect();
+
+                try {
+                    JSONObject resultObject = new JSONObject(result);
+                    String sessionKey = resultObject.getString("sessionId");
+
+                    if (sessionKey != null && sessionKey.length() > 0) {
+                        startService(new Intent(LoginActivity.this, SyncService.class).putExtra(SyncService.SESSION_TOKEN, sessionKey));
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
