@@ -7,6 +7,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
@@ -133,6 +134,7 @@ public class SyncService extends IntentService {
         builder.setContentTitle("Founder Directory")
                .setContentText("Updates to the Founder Directory are now available.")
                .setSmallIcon(R.drawable.rollins_logo_e_40)
+               .setColor(ContextCompat.getColor(this, R.color.colorPrimary))
                .setContentIntent(launchIntent)
                .setAutoCancel(true);
 
