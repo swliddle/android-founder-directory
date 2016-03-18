@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.database.sqlite.SQLiteQueryBuilder;
 import android.net.Uri;
 import android.provider.BaseColumns;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 /**
@@ -47,12 +48,12 @@ public class FounderProvider extends ContentProvider {
     }
 
     @Override
-    public int delete(Uri uri, String where, String[] whereArgs) {
+    public int delete(@NonNull Uri uri, String where, String[] whereArgs) {
         return modify(uri, null, where, whereArgs);
     }
 
     @Override
-    public String getType(Uri uri) {
+    public String getType(@NonNull Uri uri) {
         switch (sUriMatcher.match(uri)) {
             // This could be an if/else, but with more tables we'll want a switch instead.
             case URI_MATCHER_FOUNDER_ID:
@@ -63,7 +64,7 @@ public class FounderProvider extends ContentProvider {
     }
 
     @Override
-    public Uri insert(Uri uri, ContentValues initialValues) {
+    public Uri insert(@NonNull Uri uri, ContentValues initialValues) {
         long rowId = mDatabase.getWritableDatabase().insert(tableForUri(uri), Contract.IMAGE_URL, initialValues);
 
         if (rowId <= 0) {
@@ -72,8 +73,11 @@ public class FounderProvider extends ContentProvider {
 
         // Now notify the resolver of the change so it can inform any listeners.
         Uri insertUri = ContentUris.withAppendedId(Contract.CONTENT_URI, rowId);
+        Context context = getContext();
 
-        getContext().getContentResolver().notifyChange(uri, null);
+        if (context != null) {
+            context.getContentResolver().notifyChange(uri, null);
+        }
 
         return insertUri;
     }
@@ -92,7 +96,11 @@ public class FounderProvider extends ContentProvider {
         }
 
         // Then notify the resolver of the change so it can inform any listeners.
-        getContext().getContentResolver().notifyChange(uri, null);
+        Context context = getContext();
+
+        if (context != null) {
+            context.getContentResolver().notifyChange(uri, null);
+        }
 
         return count;
     }
@@ -102,11 +110,11 @@ public class FounderProvider extends ContentProvider {
         // We delegate creation to the helper.
         mDatabase = new FounderDatabaseHelper(getContext());
 
-        return mDatabase != null;
+        return true;
     }
 
     @Override
-    public Cursor query(Uri uri, String[] projection, String selection, String[] selectionArgs, String sort) {
+    public Cursor query(@NonNull Uri uri, String[] projection, String selection, String[] selectionArgs, String sort) {
         // A best practice is to use a query builder to construct an actual query from the URI.
         SQLiteQueryBuilder qb = new SQLiteQueryBuilder();
         String orderBy = null;
@@ -127,7 +135,11 @@ public class FounderProvider extends ContentProvider {
 
         // The cursor needs to know about the resolver so it can be informed of any changes while
         // the cursor is active because changes could impact cursor results.
-        cursor.setNotificationUri(getContext().getContentResolver(), uri);
+        Context context = getContext();
+
+        if (context != null) {
+            cursor.setNotificationUri(context.getContentResolver(), uri);
+        }
 
         return cursor;
     }
@@ -148,7 +160,7 @@ public class FounderProvider extends ContentProvider {
     }
 
     @Override
-    public int update(Uri uri, ContentValues values, String where, String[] whereArgs) {
+    public int update(@NonNull Uri uri, ContentValues values, String where, String[] whereArgs) {
         return modify(uri, values, where, whereArgs);
     }
 
@@ -169,7 +181,7 @@ public class FounderProvider extends ContentProvider {
         /**
          * Normal constructor.
          *
-         * @param context
+         * @param context The context in which this content provider operates
          */
         public FounderDatabaseHelper(Context context) {
             super(context, DATABASE_NAME, null, DATABASE_VERSION);
@@ -347,8 +359,10 @@ public class FounderProvider extends ContentProvider {
         public static final String SERVER_ID = "id";
 
         /**
-         * List of fields in the Founder record.
-         * @return
+         * Gives an array of fields in the Founder record, including ID and version fields,
+         * together with all content fields.
+         *
+         * @return List of fields in the Founder record.
          */
         public static String[] allFieldsIdVersion() {
             return new String[] {

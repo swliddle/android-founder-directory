@@ -28,12 +28,6 @@ import edu.byu.cet.founderdirectory.utilities.HttpHelper;
  * Created by Liddle on 3/17/16.
  */
 public class SyncService extends IntentService {
-
-    /**
-     * Default string encoding.
-     */
-    private static final String DEFAULT_ENCODING = "UTF-8";
-
     /**
      * Maximum time this service has to live.  Because we relaunch the
      * service when the user launches the app, we'll proactively shut
@@ -160,7 +154,8 @@ public class SyncService extends IntentService {
 
     /**
      * Map all the Founder data fields to their intermediate key for our server.
-     * @return
+     *
+     * @return Map of field code to field name
      */
     private Map<String, String> allFieldsMap() {
         String[] allFieldNames = FounderProvider.Contract.allFieldsIdVersion();
@@ -187,11 +182,13 @@ public class SyncService extends IntentService {
                 null, null, null);
         int maxVersion = 0;
 
-        if (maxVersionCursor.moveToFirst()) {
-            maxVersion = maxVersionCursor.getInt(0);
-        }
+        if (maxVersionCursor != null) {
+            if (maxVersionCursor.moveToFirst()) {
+                maxVersion = maxVersionCursor.getInt(0);
+            }
 
-        maxVersionCursor.close();
+            maxVersionCursor.close();
+        }
 
         return maxVersion;
     }
@@ -210,13 +207,9 @@ public class SyncService extends IntentService {
                 int deletedId = deleted.getInt(0);
 
                 try {
-                    StringBuilder uriBuilder = new StringBuilder(SYNC_SERVER_URL);
+                    String url = SYNC_SERVER_URL + "deletefounder.php" + "?k=" + mSessionToken + "&i=" + deletedId;
 
-                    uriBuilder.append("deletefounder.php");
-                    uriBuilder.append("?k=" + mSessionToken);
-                    uriBuilder.append("&i=" + deletedId);
-
-                    String result = HttpHelper.getContent(uriBuilder.toString()).trim();
+                    String result = HttpHelper.getContent(url).trim();
                     serverMaxVersion = Integer.parseInt(result);
 
                     if (!result.equals("0")) {
