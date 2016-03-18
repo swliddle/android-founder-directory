@@ -1,14 +1,12 @@
 package edu.byu.cet.founderdirectory.service;
 
-import android.annotation.TargetApi;
 import android.app.IntentService;
-import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.os.Build;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
@@ -18,6 +16,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
+import edu.byu.cet.founderdirectory.LoginActivity;
 import edu.byu.cet.founderdirectory.R;
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.utilities.HttpHelper;
@@ -50,6 +49,16 @@ public class SyncService extends IntentService {
      * Key for passing session token through the intent extras.
      */
     public static final String SESSION_TOKEN = "session";
+
+    /**
+     * Status indicating that the sync operation retrieved updates from the server.
+     */
+    private static final boolean SYNC_FOUND_SERVER_UPDATES = true;
+
+    /**
+     * ID of the sync notification, in case we want to update it.
+     */
+    private static final int SYNC_NOTIFICATION_ID = 42424242;
 
     /**
      * Base URL for synchronizing with server.
@@ -97,8 +106,9 @@ public class SyncService extends IntentService {
         while (mSessionToken != null && System.currentTimeMillis() < mMaxTime) {
             // Double-check that the interval has elapsed, in case of interrupted sleep.
             if (mLastSyncTime + POLL_INTERVAL < System.currentTimeMillis()) {
-                synchronizeFounders();
-                notifyUserOfSyncAttempt();
+                if (synchronizeFounders() == SYNC_FOUND_SERVER_UPDATES) {
+                    notifyUserOfSyncUpdates();
+                }
             }
 
             try {
@@ -109,70 +119,41 @@ public class SyncService extends IntentService {
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.JELLY_BEAN)
-    private void notifyUserOfSyncAttempt() {
+    /**
+     * Tell the user we've synchronized data with the server.
+     */
+    private void notifyUserOfSyncUpdates() {
         NotificationManager manager =
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this);
+        PendingIntent launchIntent = PendingIntent.getActivity(getApplicationContext(),
+                0, new Intent(getApplicationContext(), LoginActivity.class),
+                PendingIntent.FLAG_UPDATE_CURRENT);
 
-        Notification.Builder builder = new Notification.Builder(this)
-                .setContentTitle("Founder Directory Sync")
-                .setContentText("We've just synced with the server again.")
-                .setSmallIcon(R.drawable.rollins_logo_e_40);
+        builder.setContentTitle("Founder Directory")
+               .setContentText("Updates to the Founder Directory are now available.")
+               .setSmallIcon(R.drawable.rollins_logo_e_40)
+               .setContentIntent(launchIntent)
+               .setAutoCancel(true);
 
-        manager.notify(0, builder.build());
-
+        manager.notify(SYNC_NOTIFICATION_ID, builder.build());
     }
 
     /**
-     * List of fields in the Founder record.
-     * @return
+     * Main driver for the synchronization process.
      */
-    private String[] allFieldsIdVersion() {
-        return new String[] {
-                FounderProvider.Contract._ID,
-                FounderProvider.Contract.GIVEN_NAMES,
-                FounderProvider.Contract.SURNAMES,
-                FounderProvider.Contract.PREFERRED_FIRST_NAME,
-                FounderProvider.Contract.PREFERRED_FULL_NAME,
-                FounderProvider.Contract.CELL,
-                FounderProvider.Contract.EMAIL,
-                FounderProvider.Contract.WEB_SITE,
-                FounderProvider.Contract.LINKED_IN,
-                FounderProvider.Contract.BIOGRAPHY,
-                FounderProvider.Contract.EXPERTISE,
-                FounderProvider.Contract.SPOUSE_GIVEN_NAMES,
-                FounderProvider.Contract.SPOUSE_SURNAMES,
-                FounderProvider.Contract.SPOUSE_PREFERRED_FIRST_NAME,
-                FounderProvider.Contract.SPOUSE_PREFERRED_FULL_NAME,
-                FounderProvider.Contract.SPOUSE_CELL,
-                FounderProvider.Contract.SPOUSE_EMAIL,
-                FounderProvider.Contract.STATUS,
-                FounderProvider.Contract.YEAR_JOINED,
-                FounderProvider.Contract.HOME_ADDRESS1,
-                FounderProvider.Contract.HOME_ADDRESS2,
-                FounderProvider.Contract.HOME_CITY,
-                FounderProvider.Contract.HOME_STATE,
-                FounderProvider.Contract.HOME_POSTAL_CODE,
-                FounderProvider.Contract.HOME_COUNTRY,
-                FounderProvider.Contract.ORGANIZATION_NAME,
-                FounderProvider.Contract.JOB_TITLE,
-                FounderProvider.Contract.WORK_ADDRESS1,
-                FounderProvider.Contract.WORK_ADDRESS2,
-                FounderProvider.Contract.WORK_CITY,
-                FounderProvider.Contract.WORK_STATE,
-                FounderProvider.Contract.WORK_POSTAL_CODE,
-                FounderProvider.Contract.WORK_COUNTRY,
-                FounderProvider.Contract.MAILING_ADDRESS1,
-                FounderProvider.Contract.MAILING_ADDRESS2,
-                FounderProvider.Contract.MAILING_CITY,
-                FounderProvider.Contract.MAILING_STATE,
-                FounderProvider.Contract.MAILING_POSTAL_CODE,
-                FounderProvider.Contract.MAILING_COUNTRY,
-                FounderProvider.Contract.MAILING_SAME_AS,
-                FounderProvider.Contract.IMAGE_URL,
-                FounderProvider.Contract.SPOUSE_IMAGE_URL,
-                FounderProvider.Contract.VERSION
-        };
+    private boolean synchronizeFounders() {
+        mLastSyncTime = System.currentTimeMillis();
+
+        int maxVersion = maxFounderVersion();
+        int serverMaxVersion = 0;
+
+        // Note: In the production version, we won't let users delete
+        //       or create founder records, only update.
+        serverMaxVersion = syncDeletedFounders(serverMaxVersion);
+        serverMaxVersion = syncNewFounders(serverMaxVersion);
+        serverMaxVersion = syncDirtyFounders(serverMaxVersion);
+        return syncServerFounderUpdates(maxVersion, serverMaxVersion);
     }
 
     /**
@@ -180,7 +161,7 @@ public class SyncService extends IntentService {
      * @return
      */
     private Map<String, String> allFieldsMap() {
-        String[] allFieldNames = allFieldsIdVersion();
+        String[] allFieldNames = FounderProvider.Contract.allFieldsIdVersion();
         HashMap<String, String> allFields = new HashMap<>();
         int index = 0;
 
@@ -239,7 +220,7 @@ public class SyncService extends IntentService {
                     if (!result.equals("0")) {
                         // Sync to delete on server worked, so remove from local database
                         getContentResolver().delete(FounderProvider.Contract.CONTENT_URI,
-                                FounderProvider.Contract._ID + " = ?", new String[] { deletedId + "" });
+                                FounderProvider.Contract._ID + " = ?", new String[]{deletedId + ""});
                     }
                 } catch (Exception e) {
                     Log.d(TAG, "syncDeletedFounders: unable to delete " + deletedId);
@@ -255,7 +236,7 @@ public class SyncService extends IntentService {
     }
 
     private int syncDirtyFounders(int serverMaxVersion) {
-        String[] founderFields = allFieldsIdVersion();
+        String[] founderFields = FounderProvider.Contract.allFieldsIdVersion();
 
         // Get dirty founders that are not deleted or new
         Cursor dirtyFounders = getContentResolver().query(
@@ -278,8 +259,8 @@ public class SyncService extends IntentService {
                     HashMap<String, String> parameters = new HashMap<>();
 
                     for (String field : fieldKeyMap.keySet()) {
-                        parameters.put(fieldKeyMap.get(field),
-                                dirtyFounders.getString(dirtyFounders.getColumnIndexOrThrow(field)));
+                        parameters.put(field,
+                                dirtyFounders.getString(dirtyFounders.getColumnIndexOrThrow(fieldKeyMap.get(field))));
                     }
 
                     parameters.put("k", mSessionToken);
@@ -293,11 +274,12 @@ public class SyncService extends IntentService {
                         // Sync to server worked, so replace in local database with updated values
                         ContentValues values = new ContentValues();
 
-                        values.put(FounderProvider.Contract.NEW, 0);
-                        values.put(FounderProvider.Contract.DIRTY, 0);
+                        values.put(FounderProvider.Contract.NEW, FounderProvider.Contract.FLAG_EXISTING);
+                        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_CLEAN);
 
                         for (String field : founderFields) {
-                            if (!field.equalsIgnoreCase("id") && !field.equalsIgnoreCase("deleted")) {
+                            if ( !field.equalsIgnoreCase(FounderProvider.Contract.SERVER_ID) &&
+                                 !field.equalsIgnoreCase(FounderProvider.Contract.DELETED) ) {
                                 values.put(field, serverUpdate.getString(field));
                             }
                         }
@@ -305,7 +287,7 @@ public class SyncService extends IntentService {
                         serverMaxVersion = Integer.parseInt(serverUpdate.getString(FounderProvider.Contract.VERSION));
 
                         getContentResolver().update(FounderProvider.Contract.CONTENT_URI, values,
-                                FounderProvider.Contract._ID + " = ?", new String[]{dirtyId + ""});
+                                FounderProvider.Contract._ID + " = ?", new String[]{ dirtyId + "" });
                     }
                 } catch (Exception e) {
                     Log.d(TAG, "syncDirtyFounders: unable to update dirty founder: " + e);
@@ -320,27 +302,73 @@ public class SyncService extends IntentService {
         return serverMaxVersion;
     }
 
-    private void synchronizeFounders() {
-        mLastSyncTime = System.currentTimeMillis();
-
-        int maxVersion = maxFounderVersion();
-        int serverMaxVersion = 0;
-
-        // Note: In the production version, we won't let users delete
-        //       or create founder records, only update.
-        serverMaxVersion = syncDeletedFounders(serverMaxVersion);
-        serverMaxVersion = syncNewFounders(serverMaxVersion);
-        serverMaxVersion = syncDirtyFounders(serverMaxVersion);
-        syncServerFounderUpdates(maxVersion, serverMaxVersion);
-    }
-
     private int syncNewFounders(int serverMaxVersion) {
-        // NEEDSWORK: implement this one
+        String[] founderFields = FounderProvider.Contract.allFieldsIdVersion();
+        Cursor newFounders = getContentResolver().query(
+                FounderProvider.Contract.CONTENT_URI,
+                founderFields,
+                FounderProvider.Contract.NEW + " = " + FounderProvider.Contract.FLAG_NEW, null,
+                FounderProvider.Contract.VERSION);
+
+        if (newFounders != null) {
+            boolean success = newFounders.moveToFirst();
+
+            while (success) {
+                try {
+                    int newId = newFounders.getInt(newFounders.getColumnIndexOrThrow(FounderProvider.Contract._ID));
+                    String url = SYNC_SERVER_URL + "addfounder.php";
+                    Map<String, String> fieldKeyMap = allFieldsMap();
+                    HashMap<String, String> parameters = new HashMap<>();
+
+                    for (String field : fieldKeyMap.keySet()) {
+                        String value = newFounders.getString(newFounders.getColumnIndexOrThrow(fieldKeyMap.get(field)));
+
+                        if (value == null || value.equalsIgnoreCase("null")) {
+                            value = "";
+                        }
+
+                        parameters.put(field, value);
+                    }
+
+                    parameters.put("k", mSessionToken);
+
+                    String result = HttpHelper.postContent(url, parameters).trim();
+                    JSONObject serverNew = new JSONObject(result);
+
+                    if (!result.equals("0")) {
+                        // Sync to add on server worked, so replace in local database
+                        ContentValues values = new ContentValues();
+
+                        // TODO: There could be an issue here.  Make sure this ID doesn't already exist.
+                        values.put(FounderProvider.Contract._ID, serverNew.getString(FounderProvider.Contract.SERVER_ID));
+                        values.put(FounderProvider.Contract.NEW, FounderProvider.Contract.FLAG_EXISTING);
+                        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_CLEAN);
+                        values.put(FounderProvider.Contract.VERSION, serverNew.getString(FounderProvider.Contract.VERSION));
+                        serverMaxVersion = Integer.parseInt(serverNew.getString(FounderProvider.Contract.VERSION));
+
+                        getContentResolver().update(
+                                FounderProvider.Contract.CONTENT_URI,
+                                values,
+                                FounderProvider.Contract._ID + " = ?",
+                                new String[] { newId + "" });
+                    }
+                } catch (Exception e) {
+                    Log.d(TAG, "syncNewFounders: unable to update founder: " + e);
+                    // Ignore
+                }
+
+                success = newFounders.moveToNext();
+            }
+
+            newFounders.close();
+        }
 
         return serverMaxVersion;
     }
 
-    private void syncServerFounderUpdates(int maxVersion, int serverMaxVersion) {
+    private boolean syncServerFounderUpdates(int maxVersion, int serverMaxVersion) {
+        boolean changesMade = false;
+
         try {
             // Ask the server for updates between our max at the beginning of the sync and
             // the new max on the server
@@ -354,36 +382,40 @@ public class SyncService extends IntentService {
 
             for (int i = 0; i < len; i++) {
                 JSONObject founder = (JSONObject) founders.get(i);
+                changesMade = true;
 
-                if (founder.getString(FounderProvider.Contract.DELETED).equalsIgnoreCase("1")) {
+                if (founder.getString(FounderProvider.Contract.DELETED).equalsIgnoreCase(FounderProvider.Contract.FLAG_DELETED)) {
                     // We need to delete this founder
                     getContentResolver().delete(FounderProvider.Contract.CONTENT_URI,
                             FounderProvider.Contract._ID + " = ?",
-                            new String[] { founder.getString("id") });
+                            new String[] { founder.getString(FounderProvider.Contract.SERVER_ID) });
                 } else {
                     // We need to insert or update this founder
-                    ContentValues cv = new ContentValues();
+                    ContentValues values = new ContentValues();
 
-                    for (String field : allFieldsIdVersion()) {
+                    for (String field : FounderProvider.Contract.allFieldsIdVersion()) {
                         if (!field.equalsIgnoreCase(FounderProvider.Contract._ID)) {
-                            cv.put(field, founder.getString(field));
+                            values.put(field, founder.getString(field));
                         }
                     }
 
-                    cv.put(FounderProvider.Contract._ID, founder.getString("id"));
+                    values.put(FounderProvider.Contract._ID, founder.getString(FounderProvider.Contract.SERVER_ID));
 
                     // Attempt to update
-                    int count = getContentResolver().update(FounderProvider.Contract.CONTENT_URI, cv,
-                            FounderProvider.Contract._ID + " = ?", new String[] { founder.getString("id") });
+                    int count = getContentResolver().update(FounderProvider.Contract.CONTENT_URI, values,
+                            FounderProvider.Contract._ID + " = ?",
+                            new String[] { founder.getString(FounderProvider.Contract.SERVER_ID) });
 
                     if (count <= 0) {
                         // If update failed, attempt to insert
-                        getContentResolver().insert(FounderProvider.Contract.CONTENT_URI, cv);
+                        getContentResolver().insert(FounderProvider.Contract.CONTENT_URI, values);
                     }
                 }
             }
         } catch (Exception e) {
             Log.d(TAG, "syncServerFounderUpdates: " + e);
         }
+
+        return changesMade;
     }
 }

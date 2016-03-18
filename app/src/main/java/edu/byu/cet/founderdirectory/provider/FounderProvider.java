@@ -310,5 +310,58 @@ public class FounderProvider extends ContentProvider {
          * Main URI pattern for CET Founders content.
          */
         public static final Uri CONTENT_URI = Uri.parse("content://" + AUTHORITY + "/" + FOUNDER);
+
+        /**
+         * Flag indicating this Founder record is not deleted.
+         */
+        public static final String FLAG_AVAILABLE = "0";
+
+        /**
+         * Flag indicating this Founder record is clean.
+         */
+        public static final String FLAG_CLEAN = "0";
+
+        /**
+         * Flag indicating this Founder record is marked as deleted.
+         */
+        public static final String FLAG_DELETED = "1";
+
+        /**
+         * Flag indicating this Founder record is dirty.
+         */
+        public static final String FLAG_DIRTY = "1";
+
+        /**
+         * Flag indicating this Founder record has been stored on the server.
+         */
+        public static final String FLAG_EXISTING = "0";
+
+        /**
+         * Flag indicating this Founder record is new (has not been stored on the server).
+         */
+        public static final String FLAG_NEW = "1";
+
+        /**
+         * Field name of the ID field on the server (needed for translation).
+         */
+        public static final String SERVER_ID = "id";
+
+        /**
+         * List of fields in the Founder record.
+         * @return
+         */
+        public static String[] allFieldsIdVersion() {
+            return new String[] {
+                    _ID, GIVEN_NAMES, SURNAMES, PREFERRED_FIRST_NAME, PREFERRED_FULL_NAME,
+                    CELL, EMAIL, WEB_SITE, LINKED_IN, BIOGRAPHY, EXPERTISE, SPOUSE_GIVEN_NAMES,
+                    SPOUSE_SURNAMES, SPOUSE_PREFERRED_FIRST_NAME, SPOUSE_PREFERRED_FULL_NAME,
+                    SPOUSE_CELL, SPOUSE_EMAIL, STATUS, YEAR_JOINED, HOME_ADDRESS1, HOME_ADDRESS2,
+                    HOME_CITY, HOME_STATE, HOME_POSTAL_CODE, HOME_COUNTRY, ORGANIZATION_NAME,
+                    JOB_TITLE, WORK_ADDRESS1, WORK_ADDRESS2, WORK_CITY, WORK_STATE,
+                    WORK_POSTAL_CODE, WORK_COUNTRY, MAILING_ADDRESS1, MAILING_ADDRESS2,
+                    MAILING_CITY, MAILING_STATE, MAILING_POSTAL_CODE, MAILING_COUNTRY,
+                    MAILING_SAME_AS, IMAGE_URL, SPOUSE_IMAGE_URL, VERSION
+            };
+        }
     }
 }

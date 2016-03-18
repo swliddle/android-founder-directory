@@ -102,28 +102,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-
-        Log.d(TAG, "CONTENT_URI: " + FounderProvider.Contract.CONTENT_URI);
-        Cursor cursor = getContentResolver().query(FounderProvider.Contract.CONTENT_URI, null, null, null, null);
-
-        if (cursor != null) {
-            if (!cursor.moveToFirst()) {
-                Log.d(TAG, "Creating a Founder...");
-
-                ContentValues values = new ContentValues();
-
-                values.put(FounderProvider.Contract.GIVEN_NAMES, "Chewbacca C.");
-                values.put(FounderProvider.Contract.SURNAMES, "Wookie");
-                values.put(FounderProvider.Contract.PREFERRED_FIRST_NAME, "Chewy");
-                values.put(FounderProvider.Contract.EMAIL, "chewy@gmail.com");
-                values.put(FounderProvider.Contract.CELL, "801-422-1234");
-                values.put(FounderProvider.Contract.ORGANIZATION_NAME, "Chewy Wookie Cookies");
-
-                getContentResolver().insert(FounderProvider.Contract.CONTENT_URI, values);
-            }
-
-            cursor.close();
-        }
     }
 
     private void populateAutoComplete() {
