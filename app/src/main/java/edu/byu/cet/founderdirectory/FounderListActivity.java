@@ -1,23 +1,32 @@
 package edu.byu.cet.founderdirectory;
 
-import android.content.Context;
-import android.content.Intent;
+import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Paint;
+import android.graphics.PorterDuff;
+import android.graphics.PorterDuffXfermode;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.Toolbar;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.view.LayoutInflater;
+import android.support.v4.app.LoaderManager;
+import android.support.v4.content.CursorLoader;
+import android.support.v4.content.Loader;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
-
-import edu.byu.cet.founderdirectory.dummy.DummyContent;
-
-import java.util.List;
+import edu.byu.cet.founderdirectory.provider.FounderProvider;
 
 /**
  * An activity representing a list of Founders. This activity
@@ -27,13 +36,20 @@ import java.util.List;
  * item details. On tablets, the activity presents the list of items and
  * item details side-by-side using two vertical panes.
  */
-public class FounderListActivity extends AppCompatActivity {
+public class FounderListActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
+
+    /**
+     * Tag for logging.
+     */
+    private static final String TAG = "FounderListActivity";
 
     /**
      * Whether or not the activity is in two-pane mode, i.e. running on a tablet
      * device.
      */
     private boolean mTwoPane;
+
+    private RecyclerView mRecyclerView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -53,9 +69,9 @@ public class FounderListActivity extends AppCompatActivity {
             }
         });
 
-        View recyclerView = findViewById(R.id.founder_list);
-        assert recyclerView != null;
-        setupRecyclerView((RecyclerView) recyclerView);
+        mRecyclerView = (RecyclerView) findViewById(R.id.founder_list);
+        assert mRecyclerView != null;
+        setupRecyclerView(mRecyclerView);
 
         if (findViewById(R.id.founder_detail_container) != null) {
             // The detail container view will be present only in the
@@ -67,75 +83,82 @@ public class FounderListActivity extends AppCompatActivity {
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
-        recyclerView.setAdapter(new SimpleItemRecyclerViewAdapter(DummyContent.ITEMS));
+        getSupportLoaderManager().initLoader(0, null, this);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(new FounderAdapter());
     }
 
-    public class SimpleItemRecyclerViewAdapter
-            extends RecyclerView.Adapter<SimpleItemRecyclerViewAdapter.ViewHolder> {
+    @Override
+    public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        return(new CursorLoader(this,
+                FounderProvider.Contract.CONTENT_URI,
+                null, null, null,
+                FounderProvider.Contract.PREFERRED_FULL_NAME));
+    }
 
-        private final List<DummyContent.DummyItem> mValues;
+    @Override
+    public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        ((FounderAdapter) mRecyclerView.getAdapter()).setFounders(cursor);
+    }
 
-        public SimpleItemRecyclerViewAdapter(List<DummyContent.DummyItem> items) {
-            mValues = items;
+    @Override
+    public void onLoaderReset(Loader<Cursor> loader) {
+
+    }
+
+    public class FounderRowController extends RecyclerView.ViewHolder implements View.OnClickListener {
+        private ImageView mPhoto = null;
+        private TextView mName = null;
+
+        public FounderRowController(View row) {
+            super(row);
+
+            mPhoto = (ImageView) row.findViewById(R.id.photo);
+            mName = (TextView) row.findViewById(R.id.name);
+
+            row.setOnClickListener(this);
+        }
+
+        public void bindModel(Cursor founder) {
+            // NEEDSWORK: get photo
+            mName.setText(founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.PREFERRED_FULL_NAME)));
         }
 
         @Override
-        public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.founder_list_content, parent, false);
-            return new ViewHolder(view);
+        public void onClick(View v) {
+            // NEEDSWORK: process a click
+            Log.d(TAG, "You clicked on " + mName.getText());
+        }
+    }
+
+    public class FounderAdapter extends RecyclerView.Adapter<FounderRowController> {
+        private Cursor mFounders = null;
+
+        public void setFounders(Cursor cursor) {
+            mFounders = cursor;
+            notifyDataSetChanged();
         }
 
         @Override
-        public void onBindViewHolder(final ViewHolder holder, int position) {
-            holder.mItem = mValues.get(position);
-            holder.mIdView.setText(mValues.get(position).id);
-            holder.mContentView.setText(mValues.get(position).content);
+        public FounderRowController onCreateViewHolder(ViewGroup parent, int viewType) {
+            return new FounderRowController(getLayoutInflater().inflate(R.layout.founder_list_content, parent, false));
+        }
 
-            holder.mView.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    if (mTwoPane) {
-                        Bundle arguments = new Bundle();
-                        arguments.putString(FounderDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-                        FounderDetailFragment fragment = new FounderDetailFragment();
-                        fragment.setArguments(arguments);
-                        getSupportFragmentManager().beginTransaction()
-                                .replace(R.id.founder_detail_container, fragment)
-                                .commit();
-                    } else {
-                        Context context = v.getContext();
-                        Intent intent = new Intent(context, FounderDetailActivity.class);
-                        intent.putExtra(FounderDetailFragment.ARG_ITEM_ID, holder.mItem.id);
-
-                        context.startActivity(intent);
-                    }
-                }
-            });
+        @Override
+        public void onBindViewHolder(FounderRowController holder, int position) {
+            mFounders.moveToPosition(position);
+            holder.bindModel(mFounders);
         }
 
         @Override
         public int getItemCount() {
-            return mValues.size();
-        }
-
-        public class ViewHolder extends RecyclerView.ViewHolder {
-            public final View mView;
-            public final TextView mIdView;
-            public final TextView mContentView;
-            public DummyContent.DummyItem mItem;
-
-            public ViewHolder(View view) {
-                super(view);
-                mView = view;
-                mIdView = (TextView) view.findViewById(R.id.id);
-                mContentView = (TextView) view.findViewById(R.id.content);
+            if (mFounders == null) {
+                return 0;
             }
 
-            @Override
-            public String toString() {
-                return super.toString() + " '" + mContentView.getText() + "'";
-            }
+            int count = mFounders.getCount();
+
+            return count;
         }
     }
 }
