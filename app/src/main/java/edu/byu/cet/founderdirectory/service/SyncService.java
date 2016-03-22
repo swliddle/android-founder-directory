@@ -211,23 +211,27 @@ public class SyncService extends IntentService {
      * @param isSpouse Boolean indicating whether we are targeting the spouse photo
      */
     private void downloadPhoto(int id, boolean isSpouse) {
-        PhotoManager photoManager = PhotoManager.getSharedPhotoManager(getApplicationContext());
-        String photoUrl = SYNC_SERVER_URL + "photo.php?k=" + mSessionToken + "&i=" + id;
-        Bitmap photoBitmap;
+        try {
+            PhotoManager photoManager = PhotoManager.getSharedPhotoManager(getApplicationContext());
+            String photoUrl = SYNC_SERVER_URL + "photo.php?k=" + mSessionToken + "&i=" + id;
+            Bitmap photoBitmap;
 
-        photoUrl += "&f=" + (isSpouse ? "spouse" : "founder");
-        photoBitmap = HttpHelper.getBitmap(photoUrl);
+            photoUrl += "&f=" + (isSpouse ? "spouse" : "founder");
+            photoBitmap = HttpHelper.getBitmap(photoUrl);
 
-        if (photoBitmap != null) {
-            if (isSpouse) {
-                Log.d(TAG, "downloadPhoto saving spouse photo: " + id);
-                photoManager.saveSpousePhotoForFounderId(id, photoBitmap);
+            if (photoBitmap != null) {
+                if (isSpouse) {
+                    Log.d(TAG, "downloadPhoto saving spouse photo: " + id);
+                    photoManager.saveSpousePhotoForFounderId(id, photoBitmap);
+                } else {
+                    Log.d(TAG, "downloadPhoto saving founder photo: " + id);
+                    photoManager.savePhotoForFounderId(id, photoBitmap);
+                }
             } else {
-                Log.d(TAG, "downloadPhoto saving founder photo: " + id);
-                photoManager.savePhotoForFounderId(id, photoBitmap);
+                Log.d(TAG, "downloadPhoto null bitmap: " + id + ", isSpouse " + isSpouse);
             }
-        } else {
-            Log.d(TAG, "downloadPhoto null bitmap: " + id + ", isSpouse " + isSpouse);
+        } catch (Exception e) {
+            Log.d(TAG, "downloadPhoto unable to complete: " + e);
         }
     }
 
