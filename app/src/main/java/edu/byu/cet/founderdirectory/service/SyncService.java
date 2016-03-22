@@ -129,6 +129,10 @@ public class SyncService extends IntentService {
             // Double-check that the interval has elapsed, in case of interrupted sleep.
             if (mLastSyncTime + POLL_INTERVAL < System.currentTimeMillis()) {
                 if (synchronizeFounders() == SYNC_FOUND_SERVER_UPDATES) {
+                    // First tell the content provider that we have changes.  This is
+                    // needed, e.g., when we have downloaded a new photo from the server.
+                    getContentResolver().notifyChange(FounderProvider.Contract.CONTENT_URI, null);
+
                     notifyUserOfSyncUpdates();
                 }
             }

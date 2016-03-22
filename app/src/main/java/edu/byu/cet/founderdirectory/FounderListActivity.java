@@ -124,8 +124,6 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
             if (imageUrl != null) {
                 BitmapWorkerTask.loadBitmap(context, imageUrl, mPhoto);
             } else {
-                // NEEDSWORK: in this case we should do something to trigger an update in the future
-                //            e.g. when the bitmap is finished downloading from the server
                 mPhoto.setImageResource(R.drawable.rollins_logo_e_40);
             }
 
