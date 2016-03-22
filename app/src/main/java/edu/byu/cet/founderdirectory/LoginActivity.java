@@ -102,6 +102,16 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+
+//        // Force first founder record to dirty.
+//        ContentValues values = new ContentValues();
+//
+//        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_DIRTY);
+//        getContentResolver().update(
+//                FounderProvider.Contract.CONTENT_URI,
+//                values,
+//                FounderProvider.Contract._ID + " = ?",
+//                new String[] { "1" });
     }
 
     private void populateAutoComplete() {

@@ -7,11 +7,13 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -21,6 +23,7 @@ import edu.byu.cet.founderdirectory.LoginActivity;
 import edu.byu.cet.founderdirectory.R;
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.utilities.HttpHelper;
+import edu.byu.cet.founderdirectory.utilities.PhotoManager;
 
 /**
  * Service to synchronize founder directory with server.
@@ -36,9 +39,23 @@ public class SyncService extends IntentService {
     private static final int MAX_LIVE_TIME = 2 * 60 * 60 * 1000;
 
     /**
-     * Interval, in milliseconds, between sync polling requests.
+     * Flag indicating the target photo is for the Founder.
      */
-    private static final int POLL_INTERVAL = 5 * 60 * 1000;
+    private static final boolean PHOTO_FOUNDER = false;
+
+    /**
+     * Flag indicating the target photo is for the Founder's spouse.
+     */
+    private static final boolean PHOTO_SPOUSE = true;
+
+    /**
+     * Interval, in milliseconds, between sync polling requests.
+     *
+     * NEEDSWORK: this is temporarily set low for development and test
+     *            purposes, but we want to change this to about 5 minutes
+     *            before we release the app
+     */
+    private static final int POLL_INTERVAL = 1 * 60 * 1000;
 
     /**
      * Key for passing session token through the intent extras.
@@ -64,6 +81,16 @@ public class SyncService extends IntentService {
      * Tag for logging.
      */
     private static final String TAG = SyncService.class.getSimpleName();
+
+    /**
+     * Flag indicating there was an upload error.
+     */
+    private static final boolean UPLOAD_ERROR = true;
+
+    /**
+     * Flag indicating the upload was successful.
+     */
+    private static final boolean UPLOAD_SUCCESS = false;
 
     /**
      * Timestamp of last sync with server.
@@ -174,6 +201,45 @@ public class SyncService extends IntentService {
     }
 
     /**
+     * Download and save locally a photo for a Founder or spouse.
+     *
+     * @param id ID of the Founder record
+     * @param isSpouse Boolean indicating whether we are targeting the spouse photo
+     */
+    private void downloadPhoto(int id, boolean isSpouse) {
+        PhotoManager photoManager = PhotoManager.getSharedPhotoManager(getApplicationContext());
+        String photoUrl = SYNC_SERVER_URL + "photo.php?k=" + mSessionToken + "&i=" + id;
+        Bitmap photoBitmap;
+
+        photoUrl += "&f=" + (isSpouse ? "spouse" : "founder");
+        photoBitmap = HttpHelper.getBitmap(photoUrl);
+
+        if (photoBitmap != null) {
+            if (isSpouse) {
+                Log.d(TAG, "downloadPhoto saving spouse photo: " + id);
+                photoManager.saveSpousePhotoForFounderId(id, photoBitmap);
+            } else {
+                Log.d(TAG, "downloadPhoto saving founder photo: " + id);
+                photoManager.savePhotoForFounderId(id, photoBitmap);
+            }
+        } else {
+            Log.d(TAG, "downloadPhoto null bitmap: " + id + ", isSpouse " + isSpouse);
+        }
+    }
+
+    /**
+     * Download the Founder and/or spouse photo(s) for this Founder record.
+     *
+     * @param values A key/value store holding a Founder record ID
+     */
+    private void downloadPhotos(ContentValues values) {
+        int id = values.getAsInteger(FounderProvider.Contract._ID);
+
+        downloadPhoto(id, PHOTO_FOUNDER);
+        downloadPhoto(id, PHOTO_SPOUSE);
+    }
+
+    /**
      * Figure out what the highest version is that we know about.
      */
     private int maxFounderVersion() {
@@ -263,17 +329,24 @@ public class SyncService extends IntentService {
                     parameters.put("v", dirtyFounders.getInt(dirtyFounders.getColumnIndexOrThrow(FounderProvider.Contract.VERSION)) + "");
 
                     String result = HttpHelper.postContent(url, parameters).trim();
-                    JSONObject serverUpdate = new JSONObject(result);
 
                     if (!result.equals("0")) {
+                        boolean upResult = uploadPhoto(dirtyId, dirtyFounders, PHOTO_FOUNDER) ||
+                                           uploadPhoto(dirtyId, dirtyFounders, PHOTO_SPOUSE);
+
                         // Sync to server worked, so replace in local database with updated values
+                        JSONObject serverUpdate = new JSONObject(result);
                         ContentValues values = new ContentValues();
 
                         values.put(FounderProvider.Contract.NEW, FounderProvider.Contract.FLAG_EXISTING);
-                        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_CLEAN);
+
+                        // If we had trouble uploading an image, this record is still dirty.
+                        values.put(FounderProvider.Contract.DIRTY,
+                                (upResult == UPLOAD_SUCCESS) ? FounderProvider.Contract.FLAG_CLEAN :
+                                        FounderProvider.Contract.FLAG_DIRTY);
 
                         for (String field : founderFields) {
-                            if ( !field.equalsIgnoreCase(FounderProvider.Contract.SERVER_ID) &&
+                            if ( !field.equalsIgnoreCase(FounderProvider.Contract._ID) &&
                                  !field.equalsIgnoreCase(FounderProvider.Contract.DELETED) ) {
                                 values.put(field, serverUpdate.getString(field));
                             }
@@ -282,7 +355,7 @@ public class SyncService extends IntentService {
                         serverMaxVersion = Integer.parseInt(serverUpdate.getString(FounderProvider.Contract.VERSION));
 
                         getContentResolver().update(FounderProvider.Contract.CONTENT_URI, values,
-                                FounderProvider.Contract._ID + " = ?", new String[]{ dirtyId + "" });
+                                FounderProvider.Contract._ID + " = ?", new String[]{dirtyId + ""});
                     }
                 } catch (Exception e) {
                     Log.d(TAG, "syncDirtyFounders: unable to update dirty founder: " + e);
@@ -345,7 +418,10 @@ public class SyncService extends IntentService {
                                 FounderProvider.Contract.CONTENT_URI,
                                 values,
                                 FounderProvider.Contract._ID + " = ?",
-                                new String[] { newId + "" });
+                                new String[]{newId + ""});
+
+                        uploadPhoto(newId, newFounders, PHOTO_FOUNDER);
+                        uploadPhoto(newId, newFounders, PHOTO_SPOUSE);
                     }
                 } catch (Exception e) {
                     Log.d(TAG, "syncNewFounders: unable to update founder: " + e);
@@ -405,6 +481,8 @@ public class SyncService extends IntentService {
                         // If update failed, attempt to insert
                         getContentResolver().insert(FounderProvider.Contract.CONTENT_URI, values);
                     }
+
+                    downloadPhotos(values);
                 }
             }
         } catch (Exception e) {
@@ -412,5 +490,47 @@ public class SyncService extends IntentService {
         }
 
         return changesMade;
+    }
+
+    private boolean uploadPhoto(int id, Cursor founderRecord, boolean isSpouse) {
+        PhotoManager photoManager = PhotoManager.getSharedPhotoManager(getApplicationContext());
+        Bitmap photo;
+
+        if (isSpouse) {
+            photo = photoManager.getSpousePhotoForFounderId(id);
+        } else {
+            photo = photoManager.getPhotoForFounderId(id);
+        }
+
+        if (photo != null) {
+            Map<String, String> photoParameters = new HashMap<>();
+
+            photoParameters.put("k", mSessionToken);
+            photoParameters.put("i", id + "");
+            photoParameters.put("f", isSpouse ? "spouse" : "founder");
+            photoParameters.put("u", founderRecord.getString(founderRecord.getColumnIndexOrThrow(
+                    isSpouse ? FounderProvider.Contract.SPOUSE_IMAGE_URL :
+                            FounderProvider.Contract.IMAGE_URL)));
+
+            String result = HttpHelper.postMultipartContent(SYNC_SERVER_URL + "uploadphoto.php", photoParameters, photo);
+
+            if (result != null) {
+                try {
+                    JSONObject resultData = new JSONObject(result);
+
+                    if (resultData.getString("result").equalsIgnoreCase("success")) {
+                        return UPLOAD_SUCCESS;
+                    }
+                } catch (JSONException e) {
+                    // Ignore
+                    Log.d(TAG, "uploadPhoto: " + e + ", <" + result + ">");
+                }
+            }
+
+            return UPLOAD_ERROR;
+        }
+
+        // There was no photo to upload, so it wasn't a failure.
+        return UPLOAD_SUCCESS;
     }
 }

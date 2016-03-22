@@ -1,5 +1,6 @@
 package edu.byu.cet.founderdirectory;
 
+import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
@@ -19,6 +20,8 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
+import edu.byu.cet.founderdirectory.utilities.BitmapWorkerTask;
+import edu.byu.cet.founderdirectory.utilities.PhotoManager;
 
 /**
  * An activity representing a list of Founders. This activity
@@ -112,7 +115,20 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
         }
 
         public void bindModel(Cursor founder) {
-            // NEEDSWORK: get photo
+            Context context = getApplicationContext();
+            String imageFileName = founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.IMAGE_URL));
+            String imageUrl = PhotoManager.getSharedPhotoManager(context).urlForFileName(imageFileName);
+
+            Log.d(TAG, "bindModel url: " + imageUrl);
+
+            if (imageUrl != null) {
+                BitmapWorkerTask.loadBitmap(context, imageUrl, mPhoto);
+            } else {
+                // NEEDSWORK: in this case we should do something to trigger an update in the future
+                //            e.g. when the bitmap is finished downloading from the server
+                mPhoto.setImageResource(R.drawable.rollins_logo_e_40);
+            }
+
             mName.setText(founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.PREFERRED_FULL_NAME)));
         }
 
@@ -148,9 +164,7 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
                 return 0;
             }
 
-            int count = mFounders.getCount();
-
-            return count;
+            return mFounders.getCount();
         }
     }
 }

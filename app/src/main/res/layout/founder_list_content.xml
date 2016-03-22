@@ -35,7 +35,6 @@
         android:layout_toRightOf="@+id/photo"
         android:layout_centerVertical="true"
         android:textAppearance="?attr/textAppearanceListItem"
-        android:textSize="11pt"
         />
 
 </RelativeLayout>
