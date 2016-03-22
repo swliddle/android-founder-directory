@@ -142,10 +142,12 @@ public class PhotoManager {
         File[] cacheDirs = ContextCompat.getExternalCacheDirs(mContext);
 
         for (File dir : cacheDirs) {
-            File photoFile = new File(dir.getAbsolutePath() + File.separator + url);
+            if (dir != null) {
+                File photoFile = new File(dir.getAbsolutePath() + File.separator + url);
 
-            if (photoFile.exists()) {
-                return photoFile;
+                if (photoFile.exists()) {
+                    return photoFile;
+                }
             }
         }
 
