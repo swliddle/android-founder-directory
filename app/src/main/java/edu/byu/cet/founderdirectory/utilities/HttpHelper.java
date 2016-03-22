@@ -137,6 +137,22 @@ public class HttpHelper {
     }
 
     /**
+     * Use the GET method to process a given URL and return the server's response.
+     *
+     * @param urlString A string representation of a URL to GET
+     * @param parameters A map of parameters to be encoded on the GET query string
+     * @return The server response string for the given URL
+     */
+    public static String getContent(String urlString, Map<String, String> parameters) {
+        try {
+            return getContent(urlString + "?" + formatParameters(parameters));
+        } catch (UnsupportedEncodingException e) {
+            Log.d(TAG, "getContent encoding exception: " + e);
+            return getContent(urlString);
+        }
+    }
+
+    /**
      * Use the POST method to process a given URL and return the server's response.
      *
      * @param urlString A string representation of a URL to POST

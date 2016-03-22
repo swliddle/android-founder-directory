@@ -75,7 +75,7 @@ public class SyncService extends IntentService {
     /**
      * Base URL for synchronizing with server.
      */
-    private static final String SYNC_SERVER_URL = "http://scriptures.byu.edu/founders/";
+    public static final String SYNC_SERVER_URL = "http://scriptures.byu.edu/founders/";
 
     /**
      * Tag for logging.
@@ -91,6 +91,11 @@ public class SyncService extends IntentService {
      * Flag indicating the upload was successful.
      */
     private static final boolean UPLOAD_SUCCESS = false;
+
+    /**
+     * URL for the login endpoint.
+     */
+    public static String URL_LOGIN = "login.php";
 
     /**
      * Timestamp of last sync with server.

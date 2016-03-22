@@ -4,10 +4,11 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.LoaderManager.LoaderCallbacks;
-import android.content.ContentValues;
+import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
@@ -15,6 +16,7 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -33,16 +35,13 @@ import android.widget.TextView;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
-import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.service.SyncService;
+import edu.byu.cet.founderdirectory.utilities.HttpHelper;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -62,20 +61,39 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private static final String TAG = "Founder Directory";
 
     /**
+     * Key for session ID shared preference.
+     */
+    private static final String SESSION_ID_KEY = "sessionId";
+
+    /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
     private UserLoginTask mAuthTask = null;
 
     // UI references.
+    private String mDeviceId;
     private AutoCompleteTextView mEmailView;
     private EditText mPasswordView;
     private View mProgressView;
     private View mLoginFormView;
+    private String mSessionKey;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
+
+        SharedPreferences prefs = getSharedPreferences("founderPrefs", Context.MODE_PRIVATE);
+
+        if (prefs.contains(SESSION_ID_KEY)) {
+            mSessionKey = prefs.getString(SESSION_ID_KEY, "");
+            onAuthenticatedSuccessfully();
+        }
+
+        // This ID is reset when the device is wiped.  It's
+        // the next best thing to the actual hardware ID.
+        mDeviceId = Settings.Secure.ANDROID_ID;
+
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
         populateAutoComplete();
@@ -102,16 +120,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-
-//        // Force first founder record to dirty.
-//        ContentValues values = new ContentValues();
-//
-//        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_DIRTY);
-//        getContentResolver().update(
-//                FounderProvider.Contract.CONTENT_URI,
-//                values,
-//                FounderProvider.Contract._ID + " = ?",
-//                new String[] { "1" });
     }
 
     private void populateAutoComplete() {
@@ -157,7 +165,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         }
     }
 
-
     /**
      * Attempts to sign in or register the account specified by the login form.
      * If there are form errors (invalid email, missing fields, etc.), the
@@ -180,8 +187,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         View focusView = null;
 
         // Check for a valid password, if the user entered one.
-        if (!TextUtils.isEmpty(password) && !isPasswordValid(password)) {
-            mPasswordView.setError(getString(R.string.error_invalid_password));
+        if (TextUtils.isEmpty(password)) {
+            mPasswordView.setError(getString(R.string.error_field_required));
             focusView = mPasswordView;
             cancel = true;
         }
@@ -189,10 +196,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         // Check for a valid email address.
         if (TextUtils.isEmpty(email)) {
             mEmailView.setError(getString(R.string.error_field_required));
-            focusView = mEmailView;
-            cancel = true;
-        } else if (!isEmailValid(email)) {
-            mEmailView.setError(getString(R.string.error_invalid_email));
             focusView = mEmailView;
             cancel = true;
         }
@@ -208,16 +211,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
             mAuthTask = new UserLoginTask(email, password);
             mAuthTask.execute((Void) null);
         }
-    }
-
-    private boolean isEmailValid(String email) {
-        //TODO: Replace this with your own logic
-        return email.contains("@");
-    }
-
-    private boolean isPasswordValid(String password) {
-        //TODO: Replace this with your own logic
-        return password.length() > 4;
     }
 
     /**
@@ -287,7 +280,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
-
+        
     }
 
     private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
@@ -326,42 +319,36 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         @Override
         protected Boolean doInBackground(Void... params) {
+            Map<String, String> parameters = new HashMap<>();
+
+            parameters.put("u", mEmail);
+            parameters.put("p", mPassword);
+            parameters.put("d", mDeviceId);
+
+            String result = HttpHelper.getContent(SyncService.SYNC_SERVER_URL + SyncService.URL_LOGIN, parameters);
+
+            Log.d(TAG, "Login result: " + result);
+
             try {
-                URL url = new URL("http://scriptures.byu.edu/founders/login.php?u=" + mEmail +
-                        "&p=" + mPassword + "&d=ksjflkj234l232jkljlkj");
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+                JSONObject resultObject = new JSONObject(result);
+                String sessionKey = resultObject.getString("sessionId");
 
-                BufferedReader br = new BufferedReader(new InputStreamReader(urlConnection.getInputStream()));
-                StringBuilder sb = new StringBuilder();
-                String line;
+                if (sessionKey != null && sessionKey.length() > 0) {
+                    mSessionKey = sessionKey;
 
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                    sb.append("\n");
+                    SharedPreferences prefs = getSharedPreferences("founderPrefs", Context.MODE_PRIVATE);
+                    SharedPreferences.Editor editor = prefs.edit();
+
+                    editor.putString(SESSION_ID_KEY, sessionKey);
+                    editor.commit();
+
+                    return true;
                 }
-
-                br.close();
-
-                String result = sb.toString();
-
-                Log.d(TAG, "You received: " + result);
-                urlConnection.disconnect();
-
-                try {
-                    JSONObject resultObject = new JSONObject(result);
-                    String sessionKey = resultObject.getString("sessionId");
-
-                    if (sessionKey != null && sessionKey.length() > 0) {
-                        startService(new Intent(LoginActivity.this, SyncService.class).putExtra(SyncService.SESSION_TOKEN, sessionKey));
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            } catch (IOException e) {
+            } catch (JSONException e) {
                 e.printStackTrace();
             }
 
-            return true;
+            return false;
         }
 
         @Override
@@ -385,6 +372,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     }
 
     private void onAuthenticatedSuccessfully() {
+        startService(new Intent(LoginActivity.this, SyncService.class).putExtra(SyncService.SESSION_TOKEN, mSessionKey));
+
         Intent intent = new Intent(this, FounderListActivity.class);
         intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
