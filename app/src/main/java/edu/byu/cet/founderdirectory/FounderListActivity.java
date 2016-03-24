@@ -143,7 +143,6 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
 
             if (url == null) {
                 mPhoto.setImageResource(R.drawable.rollins_logo_e_40);
-                BitmapWorkerTask.loadBitmap(context, "http://www.dailyhaha.com/_pics/super_ugly_monkey.jpg", mPhoto);
             }
 
             mName.setText(founder.getString(mNameColumn));
