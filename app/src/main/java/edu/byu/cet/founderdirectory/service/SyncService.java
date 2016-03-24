@@ -50,12 +50,8 @@ public class SyncService extends IntentService {
 
     /**
      * Interval, in milliseconds, between sync polling requests.
-     *
-     * NEEDSWORK: this is temporarily set low for development and test
-     *            purposes, but we want to change this to about 5 minutes
-     *            before we release the app
      */
-    private static final int POLL_INTERVAL = 1 * 60 * 1000;
+    private static final int POLL_INTERVAL = 5 * 60 * 1000;
 
     /**
      * Key for passing session token through the intent extras.
@@ -75,7 +71,7 @@ public class SyncService extends IntentService {
     /**
      * Base URL for synchronizing with server.
      */
-    public static final String SYNC_SERVER_URL = "http://scriptures.byu.edu/founders/";
+    public static final String SYNC_SERVER_URL = "https://scriptures.byu.edu/founders/";
 
     /**
      * Tag for logging.
@@ -137,6 +133,7 @@ public class SyncService extends IntentService {
                     // First tell the content provider that we have changes.  This is
                     // needed, e.g., when we have downloaded a new photo from the server.
                     getContentResolver().notifyChange(FounderProvider.Contract.CONTENT_URI, null);
+                    // NEEDSWORK: clear image cache (better to do closer to image download code)
 
                     notifyUserOfSyncUpdates();
                 }
