@@ -13,6 +13,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -116,14 +117,19 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
 
         public void bindModel(Cursor founder) {
             Context context = getApplicationContext();
-            String imageFileName = founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.IMAGE_URL));
-            String imageUrl = PhotoManager.getSharedPhotoManager(context).urlForFileName(imageFileName);
+            String url = founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.IMAGE_URL));
 
-            Log.d(TAG, "bindModel url: " + imageUrl);
+            if (!TextUtils.isEmpty(url)) {
+                url = PhotoManager.getSharedPhotoManager(context).urlForFileName(url);
 
-            if (imageUrl != null) {
-                BitmapWorkerTask.loadBitmap(context, imageUrl, mPhoto);
+                if (url != null) {
+                    BitmapWorkerTask.loadBitmap(context, url, mPhoto);
+                }
             } else {
+                url = null;
+            }
+
+            if (url == null) {
                 mPhoto.setImageResource(R.drawable.rollins_logo_e_40);
             }
 
