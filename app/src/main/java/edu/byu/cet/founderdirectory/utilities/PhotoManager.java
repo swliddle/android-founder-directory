@@ -168,6 +168,9 @@ public class PhotoManager {
                 photoFile.delete();
             }
 
+            Log.d(TAG, "savePhoto: " + url);
+            BitmapWorkerTask.clearImageFromCache(url);
+
             FileOutputStream out = null;
 
             try {

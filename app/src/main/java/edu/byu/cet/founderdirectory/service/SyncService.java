@@ -51,7 +51,7 @@ public class SyncService extends IntentService {
     /**
      * Interval, in milliseconds, between sync polling requests.
      */
-    private static final int POLL_INTERVAL = 5 * 60 * 1000;
+    private static final int POLL_INTERVAL = 1 * 60 * 1000;
 
     /**
      * Key for passing session token through the intent extras.

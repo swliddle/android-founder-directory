@@ -12,6 +12,7 @@ import android.support.v4.util.LruCache;
 import android.util.Log;
 import android.widget.ImageView;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,6 +34,22 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
 
     private final WeakReference<ImageView> weakReference;
     private String url = "";
+
+    public static void clearImageFromCache(String url) {
+        if (cache != null) {
+            Log.d(TAG, "clearImageFromCache: removing mem " + url);
+            cache.remove(url);
+        }
+
+        if (diskCache != null) {
+            try {
+                Log.d(TAG, "clearImageFromCache: removing disk " + url);
+                diskCache.remove(url);
+            } catch (IOException e) {
+                // Ignore
+            }
+        }
+    }
 
     public BitmapWorkerTask(ImageView imageView) {
         // Use a WeakReference to ensure the ImageView can be garbage collected
@@ -65,6 +82,7 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
             Bitmap bitmap = getBitmapFromCache(url);
 
             if (bitmap != null) {
+                Log.d(TAG, "doInBackground: used cached bitmap for url " + url);
                 return bitmap;
             }
 

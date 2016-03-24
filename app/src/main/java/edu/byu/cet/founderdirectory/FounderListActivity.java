@@ -86,6 +86,7 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
 
     @Override
     public Loader<Cursor> onCreateLoader(int id, Bundle args) {
+        Log.d(TAG, "onCreateLoader: " + id + ", args: " + args);
         return(new CursorLoader(this,
                 FounderProvider.Contract.CONTENT_URI,
                 null, null, null,
@@ -94,12 +95,13 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
 
     @Override
     public void onLoadFinished(Loader<Cursor> loader, Cursor cursor) {
+        Log.d(TAG, "onLoadFinished: " + loader + ", cursor: " + cursor);
         ((FounderAdapter) mRecyclerView.getAdapter()).setFounders(cursor);
     }
 
     @Override
     public void onLoaderReset(Loader<Cursor> loader) {
-
+        Log.d(TAG, "onLoaderReset: " + loader);
     }
 
     public class FounderRowController extends RecyclerView.ViewHolder implements View.OnClickListener {
