@@ -4,7 +4,6 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.LoaderManager.LoaderCallbacks;
-import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
@@ -15,8 +14,8 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
-import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -39,6 +38,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import edu.byu.cet.founderdirectory.service.SyncService;
 import edu.byu.cet.founderdirectory.utilities.HttpHelper;
@@ -66,6 +66,11 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
     private static final String SESSION_ID_KEY = "sessionId";
 
     /**
+     * Key for device ID shared preference.
+     */
+    private static final String DEVICE_ID_KEY = "deviceId";
+
+    /**
      * Keep track of the login task to ensure we can cancel it if requested.
      */
     private UserLoginTask mAuthTask = null;
@@ -83,7 +88,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_login);
 
-        SharedPreferences prefs = getSharedPreferences("founderPrefs", Context.MODE_PRIVATE);
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         if (prefs.contains(SESSION_ID_KEY)) {
             mSessionKey = prefs.getString(SESSION_ID_KEY, "");
@@ -92,7 +97,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         // This ID is reset when the device is wiped.  It's
         // the next best thing to the actual hardware ID.
-        mDeviceId = Settings.Secure.ANDROID_ID;
+        mDeviceId = getDeviceId();
 
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
@@ -120,6 +125,23 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
+    }
+
+    private String getDeviceId() {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if (prefs.contains(DEVICE_ID_KEY)) {
+            return prefs.getString(DEVICE_ID_KEY, "");
+        }
+
+        // Jordan shared this approach, which has the benefit of simplicity.  KISS
+        String id = UUID.randomUUID().toString();
+        SharedPreferences.Editor editor = prefs.edit();
+
+        editor.putString(DEVICE_ID_KEY, id);
+        editor.commit();
+
+        return id;
     }
 
     private void populateAutoComplete() {
@@ -280,7 +302,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
     @Override
     public void onLoaderReset(Loader<Cursor> cursorLoader) {
-        
+
     }
 
     private void addEmailsToAutoComplete(List<String> emailAddressCollection) {
@@ -336,7 +358,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
                 if (sessionKey != null && sessionKey.length() > 0) {
                     mSessionKey = sessionKey;
 
-                    SharedPreferences prefs = getSharedPreferences("founderPrefs", Context.MODE_PRIVATE);
+                    SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(LoginActivity.this);
                     SharedPreferences.Editor editor = prefs.edit();
 
                     editor.putString(SESSION_ID_KEY, sessionKey);
