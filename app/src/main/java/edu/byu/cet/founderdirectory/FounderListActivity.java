@@ -107,6 +107,8 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
     public class FounderRowController extends RecyclerView.ViewHolder implements View.OnClickListener {
         private ImageView mPhoto = null;
         private TextView mName = null;
+        private int mNameColumn = -1;
+        private int mUrlColumn = -1;
 
         public FounderRowController(View row) {
             super(row);
@@ -119,10 +121,18 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
 
         public void bindModel(Cursor founder) {
             Context context = getApplicationContext();
-            String url = founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.IMAGE_URL));
+
+            if (mUrlColumn < 0) {
+                mUrlColumn = founder.getColumnIndexOrThrow(FounderProvider.Contract.IMAGE_URL);
+                mNameColumn = founder.getColumnIndexOrThrow(FounderProvider.Contract.PREFERRED_FULL_NAME);
+            }
+
+            String url = founder.getString(mUrlColumn);
 
             if (!TextUtils.isEmpty(url)) {
+                Log.d(TAG, "bindModel 1");
                 url = PhotoManager.getSharedPhotoManager(context).urlForFileName(url);
+                Log.d(TAG, "bindModel 2");
 
                 if (url != null) {
                     BitmapWorkerTask.loadBitmap(context, url, mPhoto);
@@ -133,9 +143,10 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
 
             if (url == null) {
                 mPhoto.setImageResource(R.drawable.rollins_logo_e_40);
+                BitmapWorkerTask.loadBitmap(context, "http://www.dailyhaha.com/_pics/super_ugly_monkey.jpg", mPhoto);
             }
 
-            mName.setText(founder.getString(founder.getColumnIndexOrThrow(FounderProvider.Contract.PREFERRED_FULL_NAME)));
+            mName.setText(founder.getString(mNameColumn));
         }
 
         @Override
