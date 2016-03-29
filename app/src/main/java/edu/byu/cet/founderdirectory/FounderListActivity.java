@@ -23,6 +23,8 @@ import android.widget.TextView;
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.utilities.BitmapWorkerTask;
 import edu.byu.cet.founderdirectory.utilities.PhotoManager;
+import xyz.danoz.recyclerviewfastscroller.sectionindicator.SectionIndicator;
+import xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller;
 
 /**
  * An activity representing a list of Founders. This activity
@@ -82,6 +84,9 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
         getSupportLoaderManager().initLoader(0, null, this);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(new FounderAdapter());
+        VerticalRecyclerViewFastScroller fastScroller = (VerticalRecyclerViewFastScroller) findViewById(R.id.fast_scroller);
+        fastScroller.setRecyclerView(recyclerView);
+        recyclerView.setOnScrollListener(fastScroller.getOnScrollListener());
     }
 
     @Override
