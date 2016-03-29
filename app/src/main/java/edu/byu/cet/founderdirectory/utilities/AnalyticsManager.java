@@ -1,14 +1,14 @@
 package edu.byu.cet.founderdirectory.utilities;
 
-import java.net.URLEncoder;
-import java.util.HashMap;
-import java.util.Map;
-
 import android.app.Application;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
 import android.util.Log;
+
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.Map;
 
 import edu.byu.cet.founderdirectory.service.SyncService;
 
@@ -35,7 +35,7 @@ public class AnalyticsManager {
      * table, perhaps like this PHP script:
 
     <?php
-        require_once("/var/uniklu-inc/opendb.inc");
+        require_once("/var/include/founders/opendb.inc");
 
         $d = addslashes($_REQUEST['d']);
         $m = addslashes($_REQUEST['m']);
@@ -56,9 +56,9 @@ public class AnalyticsManager {
      */
 
     /**
-     * SDK vjava.lang.Stringersion number.
+     * SDK version number.
      */
-    private static final int sSdkVersion = Build.VERSION.SDK_INT;
+    private static int sSdkVersion = Build.VERSION.SDK_INT;
 
     /**
      * Reference to singleton instance.
@@ -97,7 +97,7 @@ public class AnalyticsManager {
     }
 
     public static Map<String, String> getDeviceParameters(String pageUrl) {
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
 
         params.put("d", sDeviceIdentity);
         params.put("m", Build.BRAND);
@@ -118,11 +118,7 @@ public class AnalyticsManager {
      */
     public static AnalyticsManager getInstance(Application app) {
         if (sAnalyticsManager == null) {
-            if (sSdkVersion < Build.VERSION_CODES.DONUT) {
-                sAnalyticsManager = new AnalyticsManager(app);
-            } else {
-                sAnalyticsManager = new DonutAnalyticsManager(app);
-            }
+            sAnalyticsManager = new AnalyticsManager(app);
         }
 
         return sAnalyticsManager;
@@ -135,6 +131,10 @@ public class AnalyticsManager {
      * @param pageUrl  URL information, or empty string.
      */
     public void report(String pageName, String pageUrl) {
+        if (pageUrl == null) {
+            pageUrl = "";
+        }
+
         try {
             Map<String, String> params = AnalyticsManager.getDeviceParameters(pageUrl);
 
@@ -152,12 +152,12 @@ public class AnalyticsManager {
      * <p/>
      * NEEDSWORK: do this through a queue of some sort instead.
      *
-     * @param params
+     * @param params Key/value parameters to report to the server
      */
     public static void reportUsage(Map<String, String> params) {
         try {
             boolean first = true;
-            StringBuffer encodedUrl = new StringBuffer(SyncService.SYNC_SERVER_URL);
+            StringBuilder encodedUrl = new StringBuilder(SyncService.SYNC_SERVER_URL);
 
             encodedUrl.append(REPORT_USAGE);
 
@@ -176,40 +176,6 @@ public class AnalyticsManager {
             HttpHelper.sendAsyncHttpMessage(encodedUrl.toString());
         } catch (Exception e) {
             Log.d(TAG, "reportUsage: " + e);
-        }
-    }
-
-    /**
-     * Class that implements DIY analytics.
-     */
-    private static class DonutAnalyticsManager extends AnalyticsManager {
-        private DonutAnalyticsManager(Application app) {
-            super(app);
-        }
-
-        /**
-         * Report a page load.
-         *
-         * @param pageName Name of the page loaded.
-         * @param pageUrl  URL information, or empty string.
-         */
-        @Override
-        public void report(String pageName, String pageUrl) {
-            try {
-                Map<String, String> params = AnalyticsManager.getDeviceParameters(pageUrl);
-
-                // DIY analytics.
-                params.put("g", pageName);
-                reportUsage(params);
-            } catch (Exception e) {
-                // Ignore.
-            }
-
-            try {
-                // Flurry analytics.
-            } catch (Exception e) {
-                // Ignore.
-            }
         }
     }
 }
