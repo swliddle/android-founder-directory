@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
+import edu.byu.cet.founderdirectory.utilities.AnalyticsManager;
 import edu.byu.cet.founderdirectory.utilities.BitmapWorkerTask;
 import edu.byu.cet.founderdirectory.utilities.PhotoManager;
 import xyz.danoz.recyclerviewfastscroller.sectionindicator.SectionIndicator;
@@ -78,6 +79,8 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
             // activity should be in two-pane mode.
             mTwoPane = true;
         }
+
+        AnalyticsManager.getInstance(getApplication()).report("list", "");
     }
 
     private void setupRecyclerView(@NonNull RecyclerView recyclerView) {

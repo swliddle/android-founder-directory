@@ -328,4 +328,17 @@ public class HttpHelper {
 
         return (sb != null) ? sb.toString() : "";
     }
+
+    public static void sendAsyncHttpMessage(final String message) {
+        try {
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    getContent(message);
+                }
+            }).start();
+        } catch (Exception e) {
+            // Ignore
+        }
+    }
 }

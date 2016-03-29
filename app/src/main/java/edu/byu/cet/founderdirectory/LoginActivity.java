@@ -41,7 +41,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import edu.byu.cet.founderdirectory.service.SyncService;
+import edu.byu.cet.founderdirectory.utilities.AnalyticsManager;
 import edu.byu.cet.founderdirectory.utilities.HttpHelper;
+import edu.byu.cet.founderdirectory.utilities.Utilities;
 
 import static android.Manifest.permission.READ_CONTACTS;
 
@@ -64,11 +66,6 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
      * Key for session ID shared preference.
      */
     private static final String SESSION_ID_KEY = "sessionId";
-
-    /**
-     * Key for device ID shared preference.
-     */
-    private static final String DEVICE_ID_KEY = "deviceId";
 
     /**
      * Keep track of the login task to ensure we can cancel it if requested.
@@ -97,7 +94,7 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         // This ID is reset when the device is wiped.  It's
         // the next best thing to the actual hardware ID.
-        mDeviceId = getDeviceId();
+        mDeviceId = Utilities.getDeviceId(this);
 
         // Set up the login form.
         mEmailView = (AutoCompleteTextView) findViewById(R.id.email);
@@ -125,23 +122,8 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         mLoginFormView = findViewById(R.id.login_form);
         mProgressView = findViewById(R.id.login_progress);
-    }
 
-    private String getDeviceId() {
-        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(this);
-
-        if (prefs.contains(DEVICE_ID_KEY)) {
-            return prefs.getString(DEVICE_ID_KEY, "");
-        }
-
-        // Jordan shared this approach, which has the benefit of simplicity.  KISS
-        String id = UUID.randomUUID().toString();
-        SharedPreferences.Editor editor = prefs.edit();
-
-        editor.putString(DEVICE_ID_KEY, id);
-        editor.commit();
-
-        return id;
+        AnalyticsManager.getInstance(getApplication()).report("login", "");
     }
 
     private void populateAutoComplete() {
