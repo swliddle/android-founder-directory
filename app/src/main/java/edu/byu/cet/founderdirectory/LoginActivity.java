@@ -4,6 +4,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.annotation.TargetApi;
 import android.app.LoaderManager.LoaderCallbacks;
+import android.content.ContentValues;
 import android.content.CursorLoader;
 import android.content.Intent;
 import android.content.Loader;
@@ -40,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.service.SyncService;
 import edu.byu.cet.founderdirectory.utilities.AnalyticsManager;
 import edu.byu.cet.founderdirectory.utilities.HttpHelper;
@@ -124,6 +126,14 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
         mProgressView = findViewById(R.id.login_progress);
 
         AnalyticsManager.getInstance(getApplication()).report("login", "");
+
+//        ContentValues values = new ContentValues();
+//
+//        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_DIRTY);
+//        values.put(FounderProvider.Contract.HOME_ADDRESS2, "123 Sailing Along Now");
+//
+//        getContentResolver().update(FounderProvider.Contract.CONTENT_URI, values,
+//                FounderProvider.Contract._ID + " = ?", new String[]{"1"});
     }
 
     private void populateAutoComplete() {

@@ -6,20 +6,26 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     >
-    <android.support.v7.widget.RecyclerView android:id="@+id/founder_list"
-                                            android:name="edu.byu.cet.founderdirectory.FounderListFragment"
-                                            android:layout_width="match_parent"
-                                            android:layout_height="match_parent"
-                                            android:layout_marginLeft="16dp"
-                                            android:layout_marginRight="16dp"
-                                            app:layoutManager="LinearLayoutManager"
-                                            tools:context="edu.byu.cet.founderdirectory.FounderListActivity"
-                                            tools:listitem="@layout/founder_list_content"/>
 
-    <xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller
-        android:id="@+id/fast_scroller"
-        android:layout_width="32dp"
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/founder_list"
+        android:name="edu.byu.cet.founderdirectory.FounderListFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="16dp"
+        android:layout_marginRight="16dp"
+        app:layoutManager="LinearLayoutManager"
+        tools:context="edu.byu.cet.founderdirectory.FounderListActivity"
+        tools:listitem="@layout/founder_list_content"
+        />
+
+    <com.futuremind.recyclerviewfastscroll.FastScroller
+        android:id="@+id/fastscroll"
+        android:orientation="vertical"
+        android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_alignParentRight="true"
+        android:layout_alignParentEnd="true"
         />
+
 </RelativeLayout>

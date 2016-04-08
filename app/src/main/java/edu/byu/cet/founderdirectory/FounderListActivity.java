@@ -20,6 +20,9 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.futuremind.recyclerviewfastscroll.FastScroller;
+import com.futuremind.recyclerviewfastscroll.SectionTitleProvider;
+
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.utilities.AnalyticsManager;
 import edu.byu.cet.founderdirectory.utilities.BitmapWorkerTask;
@@ -49,6 +52,7 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
     private boolean mTwoPane;
 
     private RecyclerView mRecyclerView;
+    private FastScroller mFastScroller;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -59,18 +63,18 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
         setSupportActionBar(toolbar);
         toolbar.setTitle(getTitle());
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+//        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+//        fab.setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View view) {
+//                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
+//                        .setAction("Action", null).show();
+//            }
+//        });
 
         mRecyclerView = (RecyclerView) findViewById(R.id.founder_list);
         assert mRecyclerView != null;
-        setupRecyclerView(mRecyclerView);
+        setupRecyclerView();
 
         if (findViewById(R.id.founder_detail_container) != null) {
             // The detail container view will be present only in the
@@ -83,13 +87,15 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
         AnalyticsManager.getInstance(getApplication()).report("list", "");
     }
 
-    private void setupRecyclerView(@NonNull RecyclerView recyclerView) {
+    private void setupRecyclerView() {
         getSupportLoaderManager().initLoader(0, null, this);
-        recyclerView.setLayoutManager(new LinearLayoutManager(this));
-        recyclerView.setAdapter(new FounderAdapter());
-        VerticalRecyclerViewFastScroller fastScroller = (VerticalRecyclerViewFastScroller) findViewById(R.id.fast_scroller);
-        fastScroller.setRecyclerView(recyclerView);
-        recyclerView.setOnScrollListener(fastScroller.getOnScrollListener());
+        mFastScroller = (FastScroller) findViewById(R.id.fastscroll);
+        mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mRecyclerView.setAdapter(new FounderAdapter());
+        mFastScroller.setRecyclerView(mRecyclerView);
+
+        // NEEDSWORK: change color of scrolling thumb to accent color when scrolling
+        // NEEDSWORK: also change color of section title popup to accent color
     }
 
     @Override
@@ -163,8 +169,9 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
         }
     }
 
-    public class FounderAdapter extends RecyclerView.Adapter<FounderRowController> {
+    public class FounderAdapter extends RecyclerView.Adapter<FounderRowController> implements SectionTitleProvider {
         private Cursor mFounders = null;
+        private int mNameColumn = -1;
 
         public void setFounders(Cursor cursor) {
             mFounders = cursor;
@@ -189,6 +196,17 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
             }
 
             return mFounders.getCount();
+        }
+
+        @Override
+        public String getSectionTitle(int position) {
+            mFounders.moveToPosition(position);
+
+            if (mNameColumn < 0) {
+                mNameColumn = mFounders.getColumnIndexOrThrow(FounderProvider.Contract.PREFERRED_FULL_NAME);
+            }
+
+            return mFounders.getString(mNameColumn).substring(0, 1);
         }
     }
 }
