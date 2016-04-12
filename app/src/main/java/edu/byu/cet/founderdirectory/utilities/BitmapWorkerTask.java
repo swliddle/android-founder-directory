@@ -9,7 +9,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
 import android.support.v4.util.LruCache;
-import android.util.Log;
 import android.widget.ImageView;
 
 import java.io.FileInputStream;
@@ -23,11 +22,6 @@ import java.lang.ref.WeakReference;
  * Created by Liddle on 3/22/16.
  */
 public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
-    /**
-     * Tag for logging.
-     */
-    private static final String TAG = "BitmapWorkerTask";
-
     private static LruCache<String, Bitmap> cache = null;
     private static DiskLruCache diskCache = null;
 
@@ -36,13 +30,11 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
 
     public static void clearImageFromCache(String url) {
         if (cache != null) {
-            Log.d(TAG, "clearImageFromCache: removing mem " + url);
             cache.remove(url);
         }
 
         if (diskCache != null) {
             try {
-                Log.d(TAG, "clearImageFromCache: removing disk " + url);
                 diskCache.remove(url);
             } catch (IOException e) {
                 // Ignore
@@ -71,7 +63,7 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
             }
         }
 
-        weakReference = new WeakReference<ImageView>(imageView);
+        weakReference = new WeakReference<>(imageView);
     }
 
     @Override
@@ -81,7 +73,6 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
             Bitmap bitmap = getBitmapFromCache(url);
 
             if (bitmap != null) {
-                Log.d(TAG, "doInBackground: used cached bitmap for url " + url);
                 return bitmap;
             }
 
@@ -94,7 +85,12 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
     }
 
     public Bitmap getBitmapFromCache(String key) {
+        if (key.contains("/")) {
+            key = key.substring(key.lastIndexOf("/") + 1);
+        }
+
         Bitmap bitmap = getBitmapFromMemCache(key);
+
         if (bitmap == null) {
             bitmap = getBitmapFromDiskCache(key);
             if (bitmap != null) {
@@ -106,6 +102,10 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
     }
 
     public void addBitmapToCache(String key, Bitmap bitmap) {
+        if (key.contains("/")) {
+            key = key.substring(key.lastIndexOf("/") + 1);
+        }
+
         if (getBitmapFromMemCache(key) == null) {
             addBitmapToMemoryCache(key, bitmap);
         }
@@ -139,7 +139,7 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
 
     public void addBitmapToDiskCache(Bitmap bitmap, String key) {
         try {
-            DiskLruCache.Editor editor = diskCache.edit(key.hashCode() + "");
+            DiskLruCache.Editor editor = diskCache.edit(key);
             if (editor != null) {
                 OutputStream os = editor.newOutputStream(0);
                 bitmap.compress(Bitmap.CompressFormat.PNG, 100, os);
@@ -157,7 +157,7 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
     public Bitmap getBitmapFromDiskCache(String key) {
         Bitmap bitmap = null;
         try {
-            DiskLruCache.Snapshot snapshot = diskCache.get(key.hashCode() + "");
+            DiskLruCache.Snapshot snapshot = diskCache.get(key);
             if (snapshot != null) {
                 bitmap = BitmapFactory.decodeStream(snapshot.getInputStream(0));
             }
@@ -184,12 +184,10 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
         final BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
 
         if (bitmapWorkerTask != null) {
-            Log.d(TAG, "cancelPotentialWork: task not null");
             final String bitmapData = bitmapWorkerTask.url;
 
             if (!bitmapData.equals(url)) {
                 // Cancel previous task
-                Log.d(TAG, "cancelPotentialWork: canceling previous task");
                 bitmapWorkerTask.cancel(true);
             } else {
                 // The same work is already in progress
@@ -203,7 +201,6 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
 
     public static void loadBitmap(Context context, String url, ImageView imageView) {
         if (cancelPotentialWork(url, imageView)) {
-            Log.d(TAG, "loadBitmap: starting BitmapWorkerTask");
             final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
             final AsyncDrawable asyncDrawable = new AsyncDrawable(context.getResources(), null, task);
             imageView.setImageDrawable(asyncDrawable);
@@ -217,7 +214,7 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
         public AsyncDrawable(Resources res, Bitmap bitmap, BitmapWorkerTask bitmapWorkerTask) {
             super(res, bitmap);
 
-            bitmapWorkerTaskReference = new WeakReference<BitmapWorkerTask>(bitmapWorkerTask);
+            bitmapWorkerTaskReference = new WeakReference<>(bitmapWorkerTask);
         }
 
         public BitmapWorkerTask getBitmapWorkerTask() {
