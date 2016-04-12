@@ -3,9 +3,6 @@ package edu.byu.cet.founderdirectory;
 import android.content.Context;
 import android.database.Cursor;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
@@ -20,15 +17,12 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.futuremind.recyclerviewfastscroll.FastScroller;
-import com.futuremind.recyclerviewfastscroll.SectionTitleProvider;
-
+import edu.byu.cet.founderdirectory.fastscroller.FastScroller;
+import edu.byu.cet.founderdirectory.fastscroller.SectionTitleProvider;
 import edu.byu.cet.founderdirectory.provider.FounderProvider;
 import edu.byu.cet.founderdirectory.utilities.AnalyticsManager;
 import edu.byu.cet.founderdirectory.utilities.BitmapWorkerTask;
 import edu.byu.cet.founderdirectory.utilities.PhotoManager;
-import xyz.danoz.recyclerviewfastscroller.sectionindicator.SectionIndicator;
-import xyz.danoz.recyclerviewfastscroller.vertical.VerticalRecyclerViewFastScroller;
 
 /**
  * An activity representing a list of Founders. This activity
@@ -144,9 +138,7 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
             String url = founder.getString(mUrlColumn);
 
             if (!TextUtils.isEmpty(url)) {
-                Log.d(TAG, "bindModel 1");
                 url = PhotoManager.getSharedPhotoManager(context).urlForFileName(url);
-                Log.d(TAG, "bindModel 2");
 
                 if (url != null) {
                     BitmapWorkerTask.loadBitmap(context, url, mPhoto);

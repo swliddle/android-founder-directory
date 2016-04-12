@@ -4,7 +4,19 @@
     <dimen name="activity_vertical_margin">16dp</dimen>
     <dimen name="fab_margin">16dp</dimen>
     <dimen name="app_bar_height">200dp</dimen>
-    <dimen name="item_width">200dp</dimen>
+    <dimen name="item_width">300dp</dimen>
     <dimen name="text_margin">16dp</dimen>
+
+    <dimen name="fastscroller_handle_corner">41dp</dimen>
+    <dimen name="fastscroller_handle_offset">25dp</dimen>
+    <dimen name="fastscroller_handle_size">83dp</dimen>
+    <dimen name="fastscroller_handle_text_size">45sp</dimen>
+
+    <dimen name="fastscroller_track_corner">4dp</dimen>
+    <dimen name="fastscroller_track_height">32dp</dimen>
     <dimen name="fastscroller_track_width">4dp</dimen>
+    <dimen name="fastscroller_track_left_offset">33dp</dimen>
+    <dimen name="fastscroller_track_offset">9dp</dimen>
+    <dimen name="fastscroller_track_clickable_width">46dp</dimen>
+    <dimen name="fastscroller_track_padding">9dp</dimen>
 </resources>

@@ -127,13 +127,13 @@ public class LoginActivity extends AppCompatActivity implements LoaderCallbacks<
 
         AnalyticsManager.getInstance(getApplication()).report("login", "");
 
-//        ContentValues values = new ContentValues();
-//
-//        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_DIRTY);
-//        values.put(FounderProvider.Contract.HOME_ADDRESS2, "123 Sailing Along Now");
-//
-//        getContentResolver().update(FounderProvider.Contract.CONTENT_URI, values,
-//                FounderProvider.Contract._ID + " = ?", new String[]{"1"});
+        ContentValues values = new ContentValues();
+
+        values.put(FounderProvider.Contract.DIRTY, FounderProvider.Contract.FLAG_DIRTY);
+        values.put(FounderProvider.Contract.HOME_ADDRESS2, "125 Sailing Along Now");
+
+        getContentResolver().update(FounderProvider.Contract.CONTENT_URI, values,
+                FounderProvider.Contract._ID + " = ?", new String[]{"1"});
     }
 
     private void populateAutoComplete() {

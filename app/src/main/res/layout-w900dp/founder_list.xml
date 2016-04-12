@@ -34,13 +34,15 @@
             tools:context="edu.byu.cet.founderdirectory.FounderListActivity"
             tools:listitem="@layout/founder_list_content"/>
 
-        <com.futuremind.recyclerviewfastscroll.FastScroller
+        <edu.byu.cet.founderdirectory.fastscroller.FastScroller
             android:id="@+id/fastscroll"
             android:orientation="vertical"
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_alignParentRight="true"
             android:layout_alignParentEnd="true"
+            android:layout_marginTop="@dimen/fastscroller_track_padding"
+            android:layout_marginBottom="@dimen/fastscroller_track_padding"
             />
 
     </RelativeLayout>
