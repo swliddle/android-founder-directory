@@ -198,7 +198,7 @@ public class FounderListActivity extends AppCompatActivity implements LoaderMana
                 mNameColumn = mFounders.getColumnIndexOrThrow(FounderProvider.Contract.PREFERRED_FULL_NAME);
             }
 
-            return mFounders.getString(mNameColumn).substring(0, 1);
+            return mFounders.getString(mNameColumn).trim().substring(0, 1);
         }
     }
 }
