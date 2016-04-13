@@ -8,6 +8,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
@@ -126,25 +128,33 @@ public class SyncService extends IntentService {
         // Note that because we extend IntentService, we're already on
         // a background thread.  We're not going to block the UI thread.
 
-        while (mSessionToken != null && System.currentTimeMillis() < mMaxTime) {
-            // Double-check that the interval has elapsed, in case of interrupted sleep.
-            if (mLastSyncTime + POLL_INTERVAL < System.currentTimeMillis()) {
-                if (synchronizeFounders() == SYNC_FOUND_SERVER_UPDATES) {
-                    // First tell the content provider that we have changes.  This is
-                    // needed, e.g., when we have downloaded a new photo from the server.
-                    getContentResolver().notifyChange(FounderProvider.Contract.CONTENT_URI, null);
-                    // NEEDSWORK: clear image cache (better to do closer to image download code)
+        // Double-check that the interval has elapsed, in case of interrupted sleep.
+        if (mLastSyncTime + POLL_INTERVAL < System.currentTimeMillis()) {
+            if (synchronizeFounders() == SYNC_FOUND_SERVER_UPDATES) {
+                // First tell the content provider that we have changes.  This is
+                // needed, e.g., when we have downloaded a new photo from the server.
+                getContentResolver().notifyChange(FounderProvider.Contract.CONTENT_URI, null);
+                // NEEDSWORK: clear image cache (better to do closer to image download code)
 
-                    notifyUserOfSyncUpdates();
-                }
-            }
-
-            try {
-                Thread.sleep(POLL_INTERVAL);
-            } catch (InterruptedException e) {
-                // Ignore
+                notifyUserOfSyncUpdates();
             }
         }
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                Looper.prepare();
+                final Handler handler = new Handler(Looper.getMainLooper());
+
+                handler.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        // Re-launch
+                        startService(new Intent(getApplicationContext(), SyncService.class).putExtra(SyncService.SESSION_TOKEN, mSessionToken));
+                    }
+                }, POLL_INTERVAL);
+            }
+        }).start();
     }
 
     /**

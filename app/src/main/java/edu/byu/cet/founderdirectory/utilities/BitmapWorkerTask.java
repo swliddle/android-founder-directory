@@ -77,6 +77,11 @@ public class BitmapWorkerTask extends AsyncTask<String, Void, Bitmap> {
             }
 
             bitmap = BitmapFactory.decodeStream(new FileInputStream(url));
+
+            if (url == null || bitmap == null) {
+                return null;
+            }
+
             addBitmapToCache(url, bitmap);
             return bitmap;
         } catch (IOException e) {
